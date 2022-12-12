@@ -1,0 +1,37 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.1585
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PhilipsPatternRom.Converter", "PhilipsPatternRom.Converter\PhilipsPatternRom.Converter.csproj", "{988B0CDB-E88E-4F77-BE8E-C3DFE6E6D1FD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PhilipsPatternRom.Cli", "PhilipsPatternRom.Cli\PhilipsPatternRom.Cli.csproj", "{D31AFC32-38B3-44E6-947A-47BF56502476}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PhilipsPatternRom.StripeGenerator", "PhilipsPatternRom.StripeGenerator\PhilipsPatternRom.StripeGenerator.csproj", "{BF86A6E8-F4FD-4A1A-8DF4-6A9EDE177B83}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{988B0CDB-E88E-4F77-BE8E-C3DFE6E6D1FD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{988B0CDB-E88E-4F77-BE8E-C3DFE6E6D1FD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{988B0CDB-E88E-4F77-BE8E-C3DFE6E6D1FD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{988B0CDB-E88E-4F77-BE8E-C3DFE6E6D1FD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D31AFC32-38B3-44E6-947A-47BF56502476}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D31AFC32-38B3-44E6-947A-47BF56502476}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D31AFC32-38B3-44E6-947A-47BF56502476}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D31AFC32-38B3-44E6-947A-47BF56502476}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BF86A6E8-F4FD-4A1A-8DF4-6A9EDE177B83}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BF86A6E8-F4FD-4A1A-8DF4-6A9EDE177B83}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BF86A6E8-F4FD-4A1A-8DF4-6A9EDE177B83}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BF86A6E8-F4FD-4A1A-8DF4-6A9EDE177B83}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D4A90D61-E84A-4652-A7ED-9015F1A44960}
+	EndGlobalSection
+EndGlobal
