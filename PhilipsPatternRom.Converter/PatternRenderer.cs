@@ -49,7 +49,7 @@ namespace PhilipsPatternRom.Converter
             _romManager.OpenSet(type, directory);
             _type = type;
 
-            LoadVectors(type, directory);
+            LoadVectors(directory);
 
             switch (_romManager.Standard)
             {
@@ -57,6 +57,11 @@ namespace PhilipsPatternRom.Converter
                     _centreLength = 120;
                     _frontSpriteLength = 32;
                     _backSpriteLength = 64;
+                    break;
+                case GeneratorStandard.PAL_16_9:
+                    // Technically it's just "one-half" and the "other-half"
+                    _backSpriteLength = 256;
+                    _centreLength = 256;
                     break;
                 case GeneratorStandard.NTSC:
                     _centreLength = 128;
@@ -66,11 +71,19 @@ namespace PhilipsPatternRom.Converter
             }
         }
 
-        private void LoadVectors(GeneratorType type, string directory)
+        private void LoadVectors( string directory)
         {
-            for (int i = 0; i < _romManager.VectorTable.Count; i += 3)
+            if (_romManager.Standard == GeneratorStandard.PAL_16_9)
             {
-                _vectorEntries.Add(new Tuple<byte, byte, byte>(_romManager.VectorTable[i + 0], _romManager.VectorTable[i + 1], _romManager.VectorTable[i + 2]));
+                // Vector table is a different format for 16:9 units. Only two bytes are used per line - Address high and Control
+                // Kludge it into the same structure used for 4:3
+                for (int i = 0; i < _romManager.VectorTable.Count; i += 2)
+                    _vectorEntries.Add(new Tuple<byte, byte, byte>(_romManager.VectorTable[i + 1], _romManager.VectorTable[i + 0], _romManager.VectorTable[i + 1]));
+            }
+            else
+            {
+                for (int i = 0; i < _romManager.VectorTable.Count; i += 3)
+                    _vectorEntries.Add(new Tuple<byte, byte, byte>(_romManager.VectorTable[i + 0], _romManager.VectorTable[i + 1], _romManager.VectorTable[i + 2]));
             }
         }
 
@@ -132,7 +145,23 @@ namespace PhilipsPatternRom.Converter
             var frontSpriteLength = _frontSpriteLength * (type == PatternType.Luma || type == PatternType.LumaLSB ? 4 : 2);
             _clockMode = clockMode;
 
-            var linesPerField = _romManager.Standard == GeneratorStandard.PAL ? _vectorEntries.Count / 12 : (_vectorEntries.Count / 6) - 1;
+            var linesPerField = 0;
+
+            switch (_romManager.Standard)
+            {
+                case GeneratorStandard.PAL:
+                    linesPerField = _vectorEntries.Count / 12;
+                    break;
+                case GeneratorStandard.NTSC:
+                    linesPerField = _vectorEntries.Count / 6;
+                    break;
+                case GeneratorStandard.PAL_16_9:
+                    linesPerField = _vectorEntries.Count / 4;
+                    break;
+                default:
+                    throw new NotImplementedException();
+            }
+       
             var lineWidth = backSpriteLength + centreLength + frontSpriteLength;
             var bitmap = new Bitmap(lineWidth, subType == PatternSubType.DeInterlaced ? linesPerField * 2 : linesPerField);
 
@@ -140,15 +169,30 @@ namespace PhilipsPatternRom.Converter
             _hsample = 0;
             _vline = 0;
 
-            for (int i = 0; i < linesPerField; i++)
+            if (_romManager.Standard == GeneratorStandard.PAL_16_9)
             {
-                var entry = _vectorEntries[i + linesPerField];
+                for (int i = 0; i < linesPerField; i++)
+                {
+                    var entry = _vectorEntries[i + linesPerField];
 
-                if (i > 0)
+                    DrawLine_WideScreen(bitmap, type, entry);
+
+                    entry = _vectorEntries[i];
+                    DrawLine_WideScreen(bitmap, type, entry);
+                }
+            }
+            else
+            { 
+                for (int i = 0; i < linesPerField; i++)
+                {
+                    var entry = _vectorEntries[i + linesPerField];
+
+                    if (i > 0)
+                        DrawLine(bitmap, type, entry);
+
+                    entry = _vectorEntries[i];
                     DrawLine(bitmap, type, entry);
-
-                entry = _vectorEntries[i];
-                DrawLine(bitmap, type, entry);
+                }
             }
 
             var sorted = _patternData.Fragments.Values.OrderBy(el => el.Address).ToList();
@@ -286,6 +330,53 @@ namespace PhilipsPatternRom.Converter
             render(bitmap, addr1, addr1 + backSpriteLength, false);
             render(bitmap, addr2, addr2 + centreLength, false);
             render(bitmap, addr3, addr3 + frontSpriteLength, false);
+
+            _vline++;
+            _hsample = 0;
+        }
+
+        private void DrawLine_WideScreen(Bitmap bitmap, PatternType type, Tuple<byte, byte, byte> entry)
+        {
+            var romsPerComponent = type == PatternType.Luma ? 4 : 2;
+            var backSpriteLength = _backSpriteLength * (type == PatternType.Luma || type == PatternType.LumaLSB ? 4 : 2);
+            var centreLength = _centreLength * (type == PatternType.Luma || type == PatternType.LumaLSB ? 4 : 2);
+
+            PixelRenderer render = null;
+
+            switch (type)
+            {
+                case PatternType.Luma:
+                    render = DrawPixelsY;
+                    break;
+                case PatternType.LumaLSB:
+                    render = DrawPixelsLSB;
+                    break;
+                case PatternType.RminusY:
+                    render = DrawPixelsRY;
+                    break;
+                case PatternType.BminusY:
+                    render = DrawPixelsBY;
+                    break;
+            }
+
+            byte[] lsbSequence = null;
+
+            var centreAddr = (entry.Item1 << 8);
+
+            if ((entry.Item2 & 0x20) == 0x20)
+                centreAddr |= 0x10000;
+
+            if ((entry.Item2 & 0x04) == 0x04)
+                centreAddr |= 0x20000;
+
+            if ((entry.Item2 & 0x08) == 0x08)
+                centreAddr |= 0x40000;
+
+            int addr1 = (centreAddr * romsPerComponent) - 1024;
+            int addr2 = (centreAddr * romsPerComponent);
+
+            render(bitmap, addr1, addr1 + backSpriteLength, false);
+            render(bitmap, addr2, addr2 + centreLength, false);
 
             _vline++;
             _hsample = 0;

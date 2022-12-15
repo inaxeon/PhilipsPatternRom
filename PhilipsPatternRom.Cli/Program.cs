@@ -55,6 +55,17 @@ namespace PhilipsPatternRom.Cli
                     chromaOffset = -2;
                     aspectRatioAdjustment = 1.09f;
                     break;
+                case Converter.Models.GeneratorStandard.PAL_16_9:
+                    cropX = 218;
+                    cropY = 0;
+                    cropWidth = 1045;
+                    cropHeight = 580;
+                    rYrange = 65;
+                    bYrange = 46;
+                    invertRy = true;
+                    chromaOffset = -2;
+                    aspectRatioAdjustment = 0.743f;
+                    break;
                 case Converter.Models.GeneratorStandard.NTSC:
                     cropX = 135;
                     cropY = 3;
@@ -69,6 +80,7 @@ namespace PhilipsPatternRom.Cli
             }
 
             var lumaSaturated = GenerateSaturatedLuma(standardPattern.Standard, standardPattern.Luma);
+
             var lumaCropped = lumaSaturated.Clone(new Rectangle(cropX, cropY, cropWidth, cropHeight), standardPattern.Luma.PixelFormat);
             lumaCropped.Save("PM5644_Luma_Inverted_Saturated_Cropped.png", ImageFormat.Png);
 
@@ -97,9 +109,7 @@ namespace PhilipsPatternRom.Cli
             for (int line = 0; line < Y.Height; line++)
             {
                 for (int pixel = 0; pixel < Y.Width; pixel++)
-                {
                     comp.SetPixel(pixel, line, RGBFromYCbCr(Y.GetPixel(pixel, line).R, BY.GetPixel(pixel, line).R, RY.GetPixel(pixel, line).R));
-                }
             }
 
             return comp;
@@ -112,9 +122,7 @@ namespace PhilipsPatternRom.Cli
             for (int line = 0; line < unsaturated.Height; line++)
             {
                 for (int pixel = 0; pixel < unsaturated.Width; pixel++)
-                {
                     saturated.SetPixel(pixel, line, SaturateY(standard, unsaturated.GetPixel(pixel, line).R));
-                }
             }
 
             return saturated;
@@ -127,9 +135,7 @@ namespace PhilipsPatternRom.Cli
             for (int line = 0; line < unsaturated.Height; line++)
             {
                 for (int pixel = 0; pixel < unsaturated.Width; pixel++)
-                {
                     saturated.SetPixel(pixel, line, SaturateChroma(standard, unsaturated.GetPixel(pixel, line).R, range, invert));
-                }
             }
 
             return saturated;

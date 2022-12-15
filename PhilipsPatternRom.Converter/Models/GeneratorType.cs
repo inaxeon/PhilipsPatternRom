@@ -9,6 +9,7 @@ namespace PhilipsPatternRom.Converter.Models
     public enum GeneratorType
     {
         Pm5644g00,
+        Pm5644g913,
         Pm5644m00
     }
 }
