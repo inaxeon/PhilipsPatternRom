@@ -58,6 +58,20 @@ namespace PhilipsPatternRom.Converter
             new RomPart(RomType.VectorTable,    "EPROM_4008_102_58761_CSUM_1800.BIN", 0x50C8, 0x916),
         };
 
+        private static List<RomPart> Pm5644g924Parts = new List<RomPart>
+        {
+            new RomPart(RomType.Luminance0,     "EPROM_4008_002_00551_CSUM_9F93.BIN", 0, 0x80000),
+            new RomPart(RomType.Luminance1,     "EPROM_4008_002_00561_CSUM_3998.BIN", 0, 0x80000),
+            new RomPart(RomType.Luminance2,     "EPROM_4008_002_00571_CSUM_5608.BIN", 0, 0x80000),
+            new RomPart(RomType.Luminance3,     "EPROM_4008_002_00581_CSUM_739C.BIN", 0, 0x80000),
+            new RomPart(RomType.LuminanceLSB,   "EPROM_4008_002_00591_CSUM_1C84.BIN", 0, 0x80000),
+            new RomPart(RomType.ChrominanceRY0, "EPROM_4008_002_00601_CSUM_F478.BIN", 0, 0x80000),
+            new RomPart(RomType.ChrominanceRY1, "EPROM_4008_002_00611_CSUM_F167.BIN", 0, 0x80000),
+            new RomPart(RomType.ChrominanceBY0, "EPROM_4008_002_00621_CSUM_06E1.BIN", 0, 0x80000),
+            new RomPart(RomType.ChrominanceBY1, "EPROM_4008_002_00631_CSUM_FFB8.BIN", 0, 0x80000),
+            new RomPart(RomType.VectorTable,    "EPROM_4008_002_00541_CSUM_B700.BIN", 0x6D1D, 0x918),
+        };
+
         private static List<RomPart> Pm5644m00Parts = new List<RomPart>
         {
             new RomPart(RomType.Luminance0,     "EPROM_4008_102_56741_CSUM_0D4A.BIN", 0, 0x10000),
@@ -70,6 +84,20 @@ namespace PhilipsPatternRom.Converter
             new RomPart(RomType.ChrominanceBY0, "EPROM_4008_102_56811_CSUM_B3AC.BIN", 0, 0x10000),
             new RomPart(RomType.ChrominanceBY1, "EPROM_4008_102_56821_CSUM_B3EC.BIN", 0, 0x10000),
             new RomPart(RomType.VectorTable,    "EPROM_4008_102_59401_CSUM_7300.BIN", 0x5314, 0x113D),
+        };
+
+        private static List<RomPart> Pm5644p00Parts = new List<RomPart>
+        {
+            new RomPart(RomType.Luminance0,     "EPROM_4008_102_57161_CSUM_E601.BIN", 0, 0x10000),
+            new RomPart(RomType.Luminance1,     "EPROM_4008_102_57171_CSUM_D3B6.BIN", 0, 0x10000),
+            new RomPart(RomType.Luminance2,     "EPROM_4008_102_57181_CSUM_DE42.BIN", 0, 0x10000),
+            new RomPart(RomType.Luminance3,     "EPROM_4008_102_57191_CSUM_F178.BIN", 0, 0x10000),
+            new RomPart(RomType.LuminanceLSB,   "EPROM_4008_102_57201_CSUM_E138.BIN", 0, 0x10000),
+            new RomPart(RomType.ChrominanceRY0, "EPROM_4008_102_56851_CSUM_0379.BIN", 0, 0x10000),
+            new RomPart(RomType.ChrominanceRY1, "EPROM_4008_102_56861_CSUM_0393.BIN", 0, 0x10000),
+            new RomPart(RomType.ChrominanceBY0, "EPROM_4008_102_56831_CSUM_6C99.BIN", 0, 0x10000),
+            new RomPart(RomType.ChrominanceBY1, "EPROM_4008_102_56841_CSUM_6CF9.BIN", 0, 0x10000),
+            new RomPart(RomType.VectorTable,    "EPROM_4008_102_59391_CSUM_0D00.BIN", 0x5314, 0x113D),
         };
 
         public void OpenSet(GeneratorType type, string directory)
@@ -90,9 +118,17 @@ namespace PhilipsPatternRom.Converter
                     _set = Pm5644g913Parts;
                     Standard = GeneratorStandard.PAL_16_9;
                     break;
+                case GeneratorType.Pm5644g924:
+                    _set = Pm5644g924Parts;
+                    Standard = GeneratorStandard.PAL_16_9;
+                    break;
                 case GeneratorType.Pm5644m00:
                     _set = Pm5644m00Parts;
                     Standard = GeneratorStandard.NTSC;
+                    break;
+                case GeneratorType.Pm5644p00:
+                    _set = Pm5644p00Parts;
+                    Standard = GeneratorStandard.PAL_M;
                     break;
                 default:
                     throw new NotImplementedException();

@@ -60,10 +60,10 @@ namespace PhilipsPatternRom.Cli
                     cropY = 0;
                     cropWidth = 1045;
                     cropHeight = 580;
-                    rYrange = 65;
-                    bYrange = 46;
+                    rYrange = 62;
+                    bYrange = 44;
                     invertRy = true;
-                    chromaOffset = -2;
+                    chromaOffset = -4;
                     aspectRatioAdjustment = 0.743f;
                     break;
                 case Converter.Models.GeneratorStandard.NTSC:
@@ -77,9 +77,22 @@ namespace PhilipsPatternRom.Cli
                     chromaOffset = -3;
                     aspectRatioAdjustment = 0.91f;
                     break;
+                case Converter.Models.GeneratorStandard.PAL_M:
+                    cropX = 135;
+                    cropY = 3;
+                    cropWidth = 714;
+                    cropHeight = 483;
+                    rYrange = 59;
+                    bYrange = 41;
+                    invertRy = true;
+                    chromaOffset = -3;
+                    aspectRatioAdjustment = 0.91f;
+                    break;
             }
 
             var lumaSaturated = GenerateSaturatedLuma(standardPattern.Standard, standardPattern.Luma);
+            standardPattern.ChromaRy.Save("PM5644_ChromaRy.png", ImageFormat.Png);
+            //return;
 
             var lumaCropped = lumaSaturated.Clone(new Rectangle(cropX, cropY, cropWidth, cropHeight), standardPattern.Luma.PixelFormat);
             lumaCropped.Save("PM5644_Luma_Inverted_Saturated_Cropped.png", ImageFormat.Png);
@@ -158,7 +171,7 @@ namespace PhilipsPatternRom.Cli
             //Luma range is found in a range between 41 and 181 (PAL)
             // and 38 and 170 (NTSC)
 
-            if (standard == PhilipsPatternRom.Converter.Models.GeneratorStandard.NTSC)
+            if (standard == PhilipsPatternRom.Converter.Models.GeneratorStandard.NTSC || standard == PhilipsPatternRom.Converter.Models.GeneratorStandard.PAL_M)
             {
                 if (romData < 38)
                     romData = 38;
@@ -253,8 +266,8 @@ namespace PhilipsPatternRom.Cli
 
         static void ReadVectors()
         {
-            var file = File.ReadAllBytes(@"N:\Electronics\Analog TV\PM5644\PM5644M00\EPROM_4008_102_59401_CSUM_7300.bin");
-            var lastByte = 0x644D;
+            var file = File.ReadAllBytes(@"N:\Electronics\Analog TV\PM5644\PM5644P00\EPROM_4008_102_59391_CSUM_0D00.BIN");
+            var lastByte = 0x7587;
 
             for (int i = lastByte; ;)
             {

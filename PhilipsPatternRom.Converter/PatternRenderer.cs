@@ -64,6 +64,7 @@ namespace PhilipsPatternRom.Converter
                     _centreLength = 256;
                     break;
                 case GeneratorStandard.NTSC:
+                case GeneratorStandard.PAL_M:
                     _centreLength = 128;
                     _frontSpriteLength = 32;
                     _backSpriteLength = 64;
@@ -154,6 +155,10 @@ namespace PhilipsPatternRom.Converter
                     break;
                 case GeneratorStandard.NTSC:
                     linesPerField = _vectorEntries.Count / 6;
+                    break;
+                case GeneratorStandard.PAL_M:
+                    linesPerField = _vectorEntries.Count / 6;
+                    linesPerField--;
                     break;
                 case GeneratorStandard.PAL_16_9:
                     linesPerField = _vectorEntries.Count / 4;
@@ -269,7 +274,7 @@ namespace PhilipsPatternRom.Converter
 
             // Removing the clock cut-out on the NTSC version is a bastard because the sidebars fall inside the centre segment
             // Lots of alternate samples to find...
-            if (_clockMode == ClockMode.Off && _type == GeneratorType.Pm5644m00)
+            if (_clockMode == ClockMode.Off && (_type == GeneratorType.Pm5644m00 || _type == GeneratorType.Pm5644p00))
             {
                 if (centreAddr == 0x6F80)
                     centreAddr = 0x6680;
@@ -372,7 +377,7 @@ namespace PhilipsPatternRom.Converter
             if ((entry.Item2 & 0x08) == 0x08)
                 centreAddr |= 0x40000;
 
-            int addr1 = (centreAddr * romsPerComponent) - 1024;
+            int addr1 = (centreAddr * romsPerComponent) - (type == PatternType.Luma ? 1024 : 512);
             int addr2 = (centreAddr * romsPerComponent);
 
             render(bitmap, addr1, addr1 + backSpriteLength, false);
@@ -406,7 +411,7 @@ namespace PhilipsPatternRom.Converter
                     _heMarker.HasValue && _heMarker.Value == _hsample ||
                     _vsMarker.HasValue && _vsMarker.Value == _vline ||
                     _veMarker.HasValue && _veMarker.Value == _vline
-                    ? Color.Red : MonochromeFromByte(_romManager.LuminanceSamples[i]);
+                    || mark ? Color.Red : MonochromeFromByte(_romManager.LuminanceSamples[i]);
 
                 if (_hsMarker.HasValue && _hsMarker.Value == _hsample)
                     _stripeStart = i;
