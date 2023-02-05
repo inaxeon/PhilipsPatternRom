@@ -12,8 +12,8 @@ namespace PhilipsPatternRom.Converter
     {
         private string _fileName;
         private int _offset;
-        private int _length;
 
+        public int Length { get; private set; }
         public RomType Type { get; private set; }
         public byte[] Data { get; set; }
 
@@ -22,16 +22,16 @@ namespace PhilipsPatternRom.Converter
             Type = type;
             _fileName = filename;
             _offset = offset;
-            _length = length;
+            Length = length;
         }
 
         public void Load()
         {
             using (BinaryReader reader = new BinaryReader(new FileStream(_fileName, FileMode.Open)))
             {
-                Data = new byte[_length];
+                Data = new byte[Length];
                 reader.BaseStream.Seek(_offset, SeekOrigin.Begin);
-                reader.Read(Data, 0, _length);
+                reader.Read(Data, 0, Length);
             }
         }
 

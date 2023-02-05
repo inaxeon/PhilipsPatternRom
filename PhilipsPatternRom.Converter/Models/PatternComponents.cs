@@ -10,7 +10,6 @@ namespace PhilipsPatternRom.Converter.Models
     public class PatternComponents
     {
         public GeneratorStandard Standard { get; set; }
-        public ClockMode ClockMode { get; set; }
         public Bitmap Luma { get; set; }
         public Bitmap ChromaRy { get; set; }
         public Bitmap ChromaBy { get; set; }

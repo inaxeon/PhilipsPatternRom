@@ -14,11 +14,92 @@ namespace PhilipsPatternRom.Cli
     {
         static void Main(string[] args)
         {
-            Converter.Models.GeneratorType type;
+            var antiPalPatternsToAdd = new List<string>();
+            string inputDir = null;
+            string outputDir = null;
+            OperationType operation = OperationType.None;
+            Converter.Models.GeneratorType type = PhilipsPatternRom.Converter.Models.GeneratorType.None;
 
-            if (Enum.TryParse(args[0], out type))
+            for (int i = 0; i < args.Count(); i++)
             {
-                ConvertRawBitmapsToProcessedBitmaps(type, args[1]);
+                switch (args[i])
+                {
+                    case "/RenderPattern":
+                        operation = OperationType.RenderPattern;
+                        break;
+                    case "/AddApPattern":
+                        operation = OperationType.AddPattern;
+                        antiPalPatternsToAdd.Add(args[++i]);
+                        break;
+                    case "/Generator":
+                        if (!Enum.TryParse(args[++i], out type))
+                            Console.Error.WriteLine("Invalid generator type");
+                        break;
+                    case "/InROMs":
+                        inputDir = args[++i];
+                        break;
+                    case "/OutROMs":
+                        outputDir = args[++i];
+                        break;
+                }
+            }
+
+            if (operation == OperationType.None)
+            {
+                Console.Error.WriteLine("No operation specified");
+                return;
+            }
+
+            if (operation == OperationType.RenderPattern || operation == OperationType.AddPattern)
+            {
+                if (string.IsNullOrEmpty(inputDir) || !Directory.Exists(inputDir))
+                {
+                    Console.Error.WriteLine("Invalid ROM source directory");
+                    return;
+                }
+                if (type == PhilipsPatternRom.Converter.Models.GeneratorType.None)
+                {
+                    Console.Error.WriteLine("Invalid generator type");
+                    return;
+                }
+            }
+
+            switch (operation)
+            {
+                case OperationType.RenderPattern:
+                    {
+
+                        ConvertRawBitmapsToProcessedBitmaps(type, args[1]);
+                        break;
+                    }
+                case OperationType.AddPattern:
+                    {
+                        if (string.IsNullOrEmpty(outputDir))
+                        {
+                            Console.Error.WriteLine("Invalid output directory");
+                            return;
+                        }
+                        if (antiPalPatternsToAdd.Count == 0 || antiPalPatternsToAdd.Any(el => !Directory.Exists(el)))
+                        {
+                            Console.Error.WriteLine("Invalid / missing pattern source directory");
+                            return;
+                        }
+                        AddPatternsToRoms(type, inputDir, outputDir, antiPalPatternsToAdd);
+                        break;
+                    }
+
+            }
+        }
+
+        static void AddPatternsToRoms(PhilipsPatternRom.Converter.Models.GeneratorType type, string inputDir, string outputDir, List<string> antiPalPatternsToAdd)
+        {
+            var romGenerator = new RomGenerator();
+
+            romGenerator.LoadROMs(type, inputDir);
+
+            foreach (var patternDir in antiPalPatternsToAdd)
+            {
+                romGenerator.AddAntiPal(patternDir);
             }
         }
 
@@ -40,15 +121,14 @@ namespace PhilipsPatternRom.Cli
             var renderer = new PatternRenderer();
             renderer.LoadPattern(type, directory);
             var components = renderer.GeneratePatternComponents();
-            var standardPattern = components.Single(el => el.ClockMode == PhilipsPatternRom.Converter.Models.ClockMode.Off);
 
-            switch (standardPattern.Standard)
+            switch (components.Standard)
             {
                 case Converter.Models.GeneratorStandard.PAL:
                     cropX = 144;
-                    cropY = 2;
+                    cropY = 0;
                     cropWidth = 707;
-                    cropHeight = 577;
+                    cropHeight = 576;
                     rYrange = 65;
                     bYrange = 46;
                     invertRy = true;
@@ -90,25 +170,23 @@ namespace PhilipsPatternRom.Cli
                     break;
             }
 
-            var lumaSaturated = GenerateSaturatedLuma(standardPattern.Standard, standardPattern.Luma);
-            standardPattern.ChromaRy.Save("PM5644_ChromaRy.png", ImageFormat.Png);
-            //return;
+            var lumaSaturated = GenerateSaturatedLuma(components.Standard, components.Luma);
 
-            var lumaCropped = lumaSaturated.Clone(new Rectangle(cropX, cropY, cropWidth, cropHeight), standardPattern.Luma.PixelFormat);
+            var lumaCropped = lumaSaturated.Clone(new Rectangle(cropX, cropY, cropWidth, cropHeight), components.Luma.PixelFormat);
             lumaCropped.Save("PM5644_Luma_Inverted_Saturated_Cropped.png", ImageFormat.Png);
 
-            var rySaturated = GenerateSaturatedChroma(standardPattern.Standard, standardPattern.ChromaRy, rYrange, invertRy);
+            var rySaturated = GenerateSaturatedChroma(components.Standard, components.ChromaRy, rYrange, invertRy);
             var rYexpanded = new Bitmap(rySaturated, new Size(rySaturated.Width * 2, rySaturated.Height));
 
-            var ryCropped = rYexpanded.Clone(new Rectangle(cropX + chromaOffset, cropY, cropWidth, cropHeight), standardPattern.ChromaRy.PixelFormat);
+            var ryCropped = rYexpanded.Clone(new Rectangle(cropX + chromaOffset, cropY, cropWidth, cropHeight), components.ChromaRy.PixelFormat);
             ryCropped.Save("PM5644_RminusY_Inverted_Saturated_Expanded_Cropped.png", ImageFormat.Png);
 
-            var bySaturated = GenerateSaturatedChroma(standardPattern.Standard, standardPattern.ChromaBy, bYrange, true);
+            var bySaturated = GenerateSaturatedChroma(components.Standard, components.ChromaBy, bYrange, true);
             var bYexpanded = new Bitmap(bySaturated, new Size(bySaturated.Width * 2, bySaturated.Height));
-            var bYcropped = bYexpanded.Clone(new Rectangle(cropX + chromaOffset, cropY, cropWidth, cropHeight), standardPattern.ChromaBy.PixelFormat);
+            var bYcropped = bYexpanded.Clone(new Rectangle(cropX + chromaOffset, cropY, cropWidth, cropHeight), components.ChromaBy.PixelFormat);
             bYcropped.Save("PM5644_BminusY_Inverted_Saturated_Expanded_Cropped.png", ImageFormat.Png);
 
-            var composite = GenerateComposite(standardPattern.Standard, lumaCropped, ryCropped, bYcropped);
+            var composite = GenerateComposite(components.Standard, lumaCropped, ryCropped, bYcropped);
             composite.Save("PM5644_Composite.png", ImageFormat.Png);
 
             var compositeAdjusted = new Bitmap(composite, new Size((int)(composite.Width * aspectRatioAdjustment), composite.Height));

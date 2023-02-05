@@ -4,12 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace PhilipsPatternRom.Converter.Models
+namespace PhilipsPatternRom.Cli
 {
-    public enum ClockMode
+    public enum OperationType
     {
-        Off,
-        Time,
-        TimeAndDate
+        None,
+        RenderPattern,
+        AddPattern,
     }
 }

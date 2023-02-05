@@ -59,7 +59,7 @@ namespace PhilipsPatternRom.StripeGenerator
 
             var bitmap = _renderer.GeneratePatternComponents();
 
-            imgPattern.Image = bitmap.Single(el => el.ClockMode == ClockMode.Off).Luma;
+            imgPattern.Image = bitmap.Luma;
         }
 
         private void ParseAndRender()

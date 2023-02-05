@@ -43,7 +43,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Extensions\ListExtensions.cs" />
-    <Compile Include="Models\ClockMode.cs" />
     <Compile Include="Models\GeneratorStandard.cs" />
     <Compile Include="Models\GeneratorType.cs" />
     <Compile Include="Models\PatternComponents.cs" />
@@ -54,6 +53,7 @@
     <Compile Include="Models\Stripe.cs" />
     <Compile Include="Models\StripeSet.cs" />
     <Compile Include="PatternRenderer.cs" />
+    <Compile Include="RomGenerator.cs" />
     <Compile Include="RomPart.cs" />
     <Compile Include="Models\RomType.cs" />
     <Compile Include="RomManager.cs" />

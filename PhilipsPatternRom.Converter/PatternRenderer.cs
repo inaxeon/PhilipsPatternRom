@@ -29,7 +29,6 @@ namespace PhilipsPatternRom.Converter
         private int _centreLength;
         private int _backSpriteLength;
         private int _frontSpriteLength;
-        private ClockMode _clockMode;
         private GeneratorType _type;
 
         // Offset from stripe generator UI for various experimental fiddling
@@ -104,54 +103,31 @@ namespace PhilipsPatternRom.Converter
             _veMarker = null;
         }
 
-        public List<PatternComponents> GeneratePatternComponents()
+        public PatternComponents GeneratePatternComponents()
         {
-            var ret = new List<PatternComponents>();
             var components = new PatternComponents();
             _patternData = new PatternData();
 
-            components.ClockMode = ClockMode.Off;
-            components.ChromaRy = GenerateBitmapFromSpriteRomSet(PatternType.RminusY, PatternSubType.DeInterlaced, ClockMode.Off);
-            components.ChromaBy = GenerateBitmapFromSpriteRomSet(PatternType.BminusY, PatternSubType.DeInterlaced, ClockMode.Off);
-            components.Luma = GenerateBitmapFromSpriteRomSet(PatternType.Luma, PatternSubType.DeInterlaced, ClockMode.Off);
+            components.ChromaRy = GenerateBitmapFromSpriteRomSet(PatternType.RminusY, PatternSubType.DeInterlaced);
+            components.ChromaBy = GenerateBitmapFromSpriteRomSet(PatternType.BminusY, PatternSubType.DeInterlaced);
+            components.Luma = GenerateBitmapFromSpriteRomSet(PatternType.Luma, PatternSubType.DeInterlaced);
             components.Standard = _romManager.Standard;
 
-            ret.Add(components);
-
-            //components = new PatternComponents();
-
-            //components.ClockMode = ClockMode.Time;
-            //components.Luma = GenerateBitmapFromSpriteRomSet(PatternType.Luma, PatternSubType.DeInterlaced, ClockMode.Time);
-            //components.ChromaRy = GenerateBitmapFromSpriteRomSet(PatternType.RminusY, PatternSubType.DeInterlaced, ClockMode.Time);
-            //components.ChromaBy = GenerateBitmapFromSpriteRomSet(PatternType.BminusY, PatternSubType.DeInterlaced, ClockMode.Time);
-
-            //ret.Add(components);
-
-            //components = new PatternComponents();
-
-            //components.ClockMode = ClockMode.TimeAndDate;
-            //components.Luma = GenerateBitmapFromSpriteRomSet(PatternType.Luma, PatternSubType.DeInterlaced, ClockMode.TimeAndDate);
-            //components.ChromaRy = GenerateBitmapFromSpriteRomSet(PatternType.RminusY, PatternSubType.DeInterlaced, ClockMode.TimeAndDate);
-            //components.ChromaBy = GenerateBitmapFromSpriteRomSet(PatternType.BminusY, PatternSubType.DeInterlaced, ClockMode.TimeAndDate);
-
-            //ret.Add(components);
-
-            return ret;
+            return components;
         }
 
-        private Bitmap GenerateBitmapFromSpriteRomSet(PatternType type, PatternSubType subType, ClockMode clockMode)
+        private Bitmap GenerateBitmapFromSpriteRomSet(PatternType type, PatternSubType subType)
         {
             var centreLength = _centreLength * (type == PatternType.Luma || type == PatternType.LumaLSB ? 4 : 2);
             var backSpriteLength = _backSpriteLength * (type == PatternType.Luma || type == PatternType.LumaLSB ? 4 : 2);
             var frontSpriteLength = _frontSpriteLength * (type == PatternType.Luma || type == PatternType.LumaLSB ? 4 : 2);
-            _clockMode = clockMode;
 
             var linesPerField = 0;
 
             switch (_romManager.Standard)
             {
                 case GeneratorStandard.PAL:
-                    linesPerField = _vectorEntries.Count / 12;
+                    linesPerField = _vectorEntries.Count / 4;
                     break;
                 case GeneratorStandard.NTSC:
                     linesPerField = _vectorEntries.Count / 6;
@@ -187,17 +163,18 @@ namespace PhilipsPatternRom.Converter
                 }
             }
             else
-            { 
-                for (int i = 0; i < linesPerField; i++)
+            {
+                DrawLine(bitmap, type, _vectorEntries[0]);
+                DrawLine(bitmap, type, _vectorEntries[linesPerField - 1]);
+
+                for (int i = 2; i < (linesPerField - 2); i++)
                 {
-                    var entry = _vectorEntries[i + linesPerField];
-
-                    if (i > 0)
-                        DrawLine(bitmap, type, entry);
-
-                    entry = _vectorEntries[i];
-                    DrawLine(bitmap, type, entry);
+                    DrawLine(bitmap, type, _vectorEntries[i + linesPerField]);
+                    DrawLine(bitmap, type, _vectorEntries[i]);
                 }
+
+                DrawLine(bitmap, type, _vectorEntries[1]);
+                DrawLine(bitmap, type, _vectorEntries[linesPerField + 1]);
             }
 
             var sorted = _patternData.Fragments.Values.OrderBy(el => el.Address).ToList();
@@ -248,88 +225,8 @@ namespace PhilipsPatternRom.Converter
                     break;
             }
 
-            var centreAddr = (entry.Item3 << 8 | lsbSequence[1]);
-
-            // Manually substitute the clock-cutout samples. Don't know how the actual PM5644 does this.
-            if (_clockMode == ClockMode.Off && _type == GeneratorType.Pm5644g00)
-            {
-                if (centreAddr == 0xD380)
-                    centreAddr = 0x8180;
-
-                if (centreAddr == 0xD480)
-                    centreAddr = 0x8280;
-
-                if (centreAddr == 0xD580)
-                    centreAddr = 0x8380;
-
-                if (centreAddr == 0xD680)
-                    centreAddr = 0x8480;
-
-                if (centreAddr == 0xD780)
-                    centreAddr = 0x8580;
-
-                if (centreAddr == 0xD880)
-                    centreAddr = 0x8680;
-            }
-
-            // Removing the clock cut-out on the NTSC version is a bastard because the sidebars fall inside the centre segment
-            // Lots of alternate samples to find...
-            if (_clockMode == ClockMode.Off && (_type == GeneratorType.Pm5644m00 || _type == GeneratorType.Pm5644p00))
-            {
-                if (centreAddr == 0x6F80)
-                    centreAddr = 0x6680;
-
-                if (centreAddr == 0x7000)
-                    centreAddr = 0x6700;
-
-                if (centreAddr == 0x7080)
-                    centreAddr = 0x6780;
-
-                if (centreAddr == 0x7100)
-                    centreAddr = 0x6800;
-
-                if (centreAddr == 0x7180)
-                    centreAddr = 0x6880;
-
-                if (centreAddr == 0x7200)
-                    centreAddr = 0x6900;
-
-                if (centreAddr == 0x7280)
-                    centreAddr = 0x6980;
-
-                if (centreAddr == 0x7300)
-                    centreAddr = 0x6A00;
-
-                if (centreAddr == 0x7380)
-                    centreAddr = 0x6A80;
-
-                if (centreAddr == 0xCC00)
-                    centreAddr = 0xC400;
-
-                if (centreAddr == 0xCB80)
-                    centreAddr = 0xC380;
-
-                if (centreAddr == 0xCB00)
-                    centreAddr = 0xC300;
-
-                if (centreAddr == 0xCA80)
-                    centreAddr = 0xC280;
-
-                if (centreAddr == 0xCA00)
-                    centreAddr = 0xC200;
-
-                if (centreAddr == 0xC980)
-                    centreAddr = 0xC180;
-
-                if (centreAddr == 0xC900)
-                    centreAddr = 0xC100;
-
-                if (centreAddr == 0xC880)
-                    centreAddr = 0xC080;
-            }
-
             int addr1 = (entry.Item2 << 8 | lsbSequence[0]) * romsPerComponent;
-            int addr2 = centreAddr * romsPerComponent;
+            int addr2 = (entry.Item3 << 8 | lsbSequence[1]) * romsPerComponent;
             int addr3 = (entry.Item2 << 8 | lsbSequence[2]) * romsPerComponent;
 
             render(bitmap, addr1, addr1 + backSpriteLength, false);

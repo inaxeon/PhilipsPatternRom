@@ -19,6 +19,8 @@ namespace PhilipsPatternRom.Converter
 
         public GeneratorStandard Standard { get; private set; }
 
+        public int RomSize { get; private set; }
+
         private List<RomPart> _set;
 
         public RomManager()
@@ -41,7 +43,9 @@ namespace PhilipsPatternRom.Converter
             new RomPart(RomType.ChrominanceRY1, "EPROM_4008_102_56251_CSUM_F397.BIN", 0, 0x10000),
             new RomPart(RomType.ChrominanceBY0, "EPROM_4008_102_56261_CSUM_2DA9.BIN", 0, 0x10000),
             new RomPart(RomType.ChrominanceBY1, "EPROM_4008_102_56271_CSUM_2E0F.BIN", 0, 0x10000),
-            new RomPart(RomType.VectorTable,    "EPROM_4008_102_59371_CSUM_A100.BIN", 0x52F6, 0x28C8),
+            //new RomPart(RomType.VectorTable,    "EPROM_4008_102_59371_CSUM_A100.BIN", 0x52F6, 0xD98), // Clock full
+            //new RomPart(RomType.VectorTable,    "EPROM_4008_102_59371_CSUM_A100.BIN", 0x608E, 0xD98), // Clock half
+            new RomPart(RomType.VectorTable,    "EPROM_4008_102_59371_CSUM_A100.BIN", 0x6E26, 0xD98), // Clock off
         };
 
         private static List<RomPart> Pm5644g913Parts = new List<RomPart>
@@ -138,6 +142,8 @@ namespace PhilipsPatternRom.Converter
             {
                 rom.Load();
             }
+
+            RomSize = _set.Single(el => el.Type == RomType.Luminance0).Length;
 
             var lum0Data = _set.Single(el => el.Type == RomType.Luminance0).Data;
             var lum1Data = _set.Single(el => el.Type == RomType.Luminance1).Data;
