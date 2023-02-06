@@ -49,28 +49,25 @@ namespace PhilipsPatternRom.Converter
 
         public void AddAntiPal(string directory)
         {
-            int line = 0;
-            int romOffset = 0;
-
             _invertNewSamples = true;
 
             Init(directory);
 
-            ConvertPattern(0, ref line, ref romOffset);
-            ConvertPattern(580, ref line, ref romOffset);
+            var ap1 = ConvertPattern(0, 0, _targetOffset);
+            var ap2 = ConvertPattern(580, ap1.NextLine, ap1.NextOffset);
 
             for (int i = 0; i < _vectorTableLength; i++)
             {
-                if (!_vectorEntries.ContainsKey(i))
-                {
-                    throw new Exception("Missing vector entry " + i);
-                }
+                //if (!_vectorEntries.ContainsKey(i))
+                //{
+                //    throw new Exception("Missing vector entry " + i);
+                //}
             }
         }
 
         private void Init(string directory)
         {
-            _vectorEntries = new Dictionary<int, Tuple<byte, byte, byte>>();
+            //_vectorEntries = new Dictionary<int, Tuple<byte, byte, byte>>();
             _ySamples = new List<ushort>();
             _rySamples = new List<ushort>();
             _bySamples = new List<ushort>();
@@ -80,11 +77,7 @@ namespace PhilipsPatternRom.Converter
 
             var backPorchVector = _sourceVectorEntries[5]; // Pick a line (any line) which has an appropriate back porch
 
-            var addr = Utility.DecodeVector(backPorchVector, Utility.SampleType.Centre, 4);
-
-            var existingYCentreSamples = _romManager.LuminanceSamplesFull.Skip(addr).Take(480).ToList();
-
-            addr = Utility.DecodeVector(backPorchVector, Utility.SampleType.BackPorch, 4);
+            var addr = Utility.DecodeVector(backPorchVector, Utility.SampleType.BackPorch, 4);
 
             _existingYBackPorchSamples = _romManager.LuminanceSamplesFull.Skip(addr).Take(128).ToList();
 
@@ -107,65 +100,108 @@ namespace PhilipsPatternRom.Converter
 
             data = File.ReadAllBytes(ryChannelFile);
 
-            for (int i = 0; i < data.Length; i += 2)
-                _rySamples.Add((ushort)(data[i + 1] << 8 | data[i]));
+            // Do 4:4:4 -> 4:2:2 conversion right here and now
+
+            for (int i = 0; i < data.Length; i += 4)
+            {
+                var s1 = (data[i + 1] << 8 | data[i]);
+                var s2 = (data[i + 3] << 8 | data[i + 2]);
+                var avg = (ushort)((s1 + s2) / 2);
+
+                _rySamples.Add(avg);
+            }
 
             data = File.ReadAllBytes(byChannelFile);
 
-            for (int i = 0; i < data.Length; i += 2)
-                _bySamples.Add((ushort)(data[i + 1] << 8 | data[i]));
+            for (int i = 0; i < data.Length; i += 4)
+            {
+                var s1 = (data[i + 1] << 8 | data[i]);
+                var s2 = (data[i + 3] << 8 | data[i + 2]);
+                var avg = (ushort)((s1 + s2) / 2);
+
+                _bySamples.Add(avg);
+            }
         }
 
-        private int ConvertPattern(int baseVector, ref int line, ref int romOffset)
+        private ConvertedComponents ConvertPattern(int baseVector, int line, int offset)
         {
+            var ret = new ConvertedComponents
+            {
+                SamplesY = new List<int>(),
+                SamplesRy = new List<int>(),
+                SamplesBy = new List<int>(),
+                VectorTable = new Dictionary<int, Tuple<byte, byte, byte>>()
+            };
+
             int i = 0;
-            var outSamples = new List<int>();
-            var vectorEntries = new Dictionary<int, Tuple<byte, byte, byte>>();
 
-            outSamples.AddRange(BuildSamples(line++, romOffset));
-            vectorEntries[baseVector] = GetVectorForOffset(romOffset);
-            romOffset += _lineLength;
+            ConvertAllSamples(ret, line++, offset);
+            ret.VectorTable[baseVector] = GetVectorForOffset(offset);
+            offset += _lineLength;
 
-            outSamples.AddRange(BuildSamples(line++, romOffset));
-            vectorEntries[baseVector + (_linesPerField - 1)] = GetVectorForOffset(romOffset);
-            romOffset += _lineLength;
+            ConvertAllSamples(ret, line++, offset);
+            ret.VectorTable[baseVector + (_linesPerField - 1)] = GetVectorForOffset(offset);
+            offset += _lineLength;
 
             for (i = 2; i < (_linesPerField - 2); i++)
             {
                 var alternateField = i + _linesPerField;
 
-                outSamples.AddRange(BuildSamples(line++, romOffset));
-                vectorEntries[baseVector + alternateField] = GetVectorForOffset(romOffset);
+                ConvertAllSamples(ret, line++, offset);
+                ret.VectorTable[baseVector + alternateField] = GetVectorForOffset(offset);
 
-                romOffset += _lineLength;
+                offset += _lineLength;
 
-                outSamples.AddRange(BuildSamples(line++, romOffset));
-                vectorEntries[baseVector + i] = GetVectorForOffset(romOffset);
-                romOffset += _lineLength;
+                ConvertAllSamples(ret, line++, offset);
+                ret.VectorTable[baseVector + i] = GetVectorForOffset(offset);
+                offset += _lineLength;
             }
 
-            outSamples.AddRange(BuildSamples(line++, romOffset));
-            vectorEntries[baseVector + 1] = GetVectorForOffset(romOffset);
-            romOffset += _lineLength;
+            ConvertAllSamples(ret, line++, offset);
+            ret.VectorTable[baseVector + 1] = GetVectorForOffset(offset);
+            offset += _lineLength;
 
-            outSamples.AddRange(BuildSamples(line++, romOffset));
-            vectorEntries[baseVector + _linesPerField + 1] = GetVectorForOffset(romOffset);
-            romOffset += _lineLength;
+            ConvertAllSamples(ret, line++, offset);
+            ret.VectorTable[baseVector + _linesPerField + 1] = GetVectorForOffset(offset);
+            offset += _lineLength;
 
             //Dupes
-            vectorEntries[baseVector + 290] = vectorEntries[baseVector + 1];
-            vectorEntries[baseVector + 578] = vectorEntries[baseVector + 1];
-            vectorEntries[baseVector + 579] = vectorEntries[baseVector + 1];
-            vectorEntries[baseVector + 288] = vectorEntries[baseVector + 289];
+            ret.VectorTable[baseVector + 290] = ret.VectorTable[baseVector + 1];
+            ret.VectorTable[baseVector + 578] = ret.VectorTable[baseVector + 1];
+            ret.VectorTable[baseVector + 579] = ret.VectorTable[baseVector + 1];
+            ret.VectorTable[baseVector + 288] = ret.VectorTable[baseVector + 289];
 
-            return romOffset;
+            ret.NextOffset = offset;
+            ret.NextLine = line;
+
+            return ret;
         }
 
-        private List<int> BuildSamples(int line, int offset)
+        private void ConvertAllSamples(ConvertedComponents components, int line, int offset)
         {
-            var outYSamples = new List<int>();
+            components.SamplesY.AddRange(BuildSamples(PatternType.Luma, line, offset));
+            components.SamplesRy.AddRange(BuildSamples(PatternType.RminusY, line, offset));
+            components.SamplesBy.AddRange(BuildSamples(PatternType.BminusY, line, offset));
+        }
+
+        private List<int> BuildSamples(PatternType type, int line, int offset)
+        {
+            var outSamples = new List<int>();
             var newPatternStartOffset = 133;
             var maxBackAndCentreSamples = 736;
+            var centreGap = 32;
+            var frontPorchGap = 128;
+            var lineLength = _lineLength;
+
+            if (type != PatternType.Luma)
+            {
+                newPatternStartOffset /= 2;
+                maxBackAndCentreSamples /= 2;
+                centreGap /= 2;
+                frontPorchGap /= 2;
+                offset /= 2;
+                lineLength /= 2;
+            }
 
             // _centreLength = 480 (512)
             // _frontSpriteLength = 128
@@ -183,29 +219,65 @@ namespace PhilipsPatternRom.Converter
             // With the last 128 that is 896 total per line
             // 0x00-0xE0 per rom. The rest per line is wasted.
 
-            line = 5;
+            switch (type)
+            {
+                case PatternType.Luma:
+                    outSamples.AddRange(_existingYBackPorchSamples.Select(el => (int)el));
+                    break;
+                case PatternType.RminusY:
+                    outSamples.AddRange(_existingRyBackPorchSamples.Select(el => (int)el));
+                    break;
+                case PatternType.BminusY:
+                    outSamples.AddRange(_existingByBackPorchSamples.Select(el => (int)el));
+                    break;
+            }
 
-            outYSamples.AddRange(_existingYBackPorchSamples.Select(el => (int)el));
 
             var existingBackPorchToNewSamplesOffset = (newPatternStartOffset - _existingYBackPorchSamples.Count);
-            var lineStart = (line * _lineLength);
+            var lineStart = (line * lineLength);
 
             // Splice new samples with HSync+Colour burst from old pattern
 
             for (int i = newPatternStartOffset; i < (maxBackAndCentreSamples + existingBackPorchToNewSamplesOffset); i++)
-                outYSamples.Add(AdjustY(_ySamples[lineStart + i]));
+            {
+                switch (type)
+                {
+                    case PatternType.Luma:
+                        outSamples.Add(AdjustLuma(_ySamples[lineStart + i]));
+                        break;
+                    case PatternType.RminusY:
+                        outSamples.Add(AdjustChroma(_rySamples[lineStart + i]));
+                        break;
+                    case PatternType.BminusY:
+                        outSamples.Add(AdjustChroma(_bySamples[lineStart + i]));
+                        break;
+                }
+            }
 
-            outYSamples.AddRange(Enumerable.Repeat(-1, 32));
+            outSamples.AddRange(Enumerable.Repeat(-1, centreGap));
 
             for (int i = (maxBackAndCentreSamples + existingBackPorchToNewSamplesOffset); i < (maxBackAndCentreSamples + newPatternStartOffset); i++)
-                outYSamples.Add(AdjustY(_ySamples[lineStart + i]));
+            {
+                switch (type)
+                {
+                    case PatternType.Luma:
+                        outSamples.Add(AdjustLuma(_ySamples[lineStart + i]));
+                        break;
+                    case PatternType.RminusY:
+                        outSamples.Add(AdjustChroma(_rySamples[lineStart + i]));
+                        break;
+                    case PatternType.BminusY:
+                        outSamples.Add(AdjustChroma(_bySamples[lineStart + i]));
+                        break;
+                }
+            }
 
-            outYSamples.AddRange(Enumerable.Repeat(-1, 128));
+            outSamples.AddRange(Enumerable.Repeat(-1, frontPorchGap));
 
-            return outYSamples;
+            return outSamples;
         }
 
-        private ushort AdjustY(ushort source)
+        private ushort AdjustLuma(ushort source)
         {
             int sourceAdjusted = source;
 
@@ -236,12 +308,45 @@ namespace PhilipsPatternRom.Converter
                 sourceAdjusted -= newWhiteLevel;
             }
 
-            float scaleFactor = (float)originalRange / (float)newRange;
-            float adjusted = (float)sourceAdjusted * scaleFactor;
+            decimal scaleFactor = (decimal)originalRange / (decimal)newRange;
+            decimal adjusted = (decimal)sourceAdjusted * scaleFactor;
             adjusted += originalWhiteLevel;
 
             if (adjusted < 0)
                 throw new Exception("Adjusted sample less than zero");
+
+            return (ushort)adjusted;
+        }
+
+        private ushort AdjustChroma(ushort source)
+        {
+            // Old RY and BY:
+            // Max: 224
+            // Centre: 128
+            // Min: 32
+
+            // New RY and BY:
+            // Max: 848
+            // Centre: 512
+            // Min: 176
+
+            var originalMax = 224;
+            var originalCentre = 128;
+            var originalMin = 32;
+
+            var newMax = 848;
+            var newCentre = 512;
+            var newMin = 176;
+
+            var originalRange = (originalMax - originalMin);
+            var newRange = (newMax - newMin);
+
+            decimal scaleFactor = (decimal)originalRange / (decimal)newRange;
+
+            int sourceAdjusted = (source - newCentre);
+            decimal adjusted = (decimal)sourceAdjusted * scaleFactor;
+
+            adjusted += originalCentre;
 
             return (ushort)adjusted;
         }

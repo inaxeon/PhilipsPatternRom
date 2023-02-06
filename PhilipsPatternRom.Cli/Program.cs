@@ -173,6 +173,8 @@ namespace PhilipsPatternRom.Cli
             }
 
             components.Luma.Save("PM5644_Luma.png", ImageFormat.Png);
+            components.ChromaRy.Save("PM5644_ChromaRy.png", ImageFormat.Png);
+            components.ChromaBy.Save("PM5644_ChromaBy.png", ImageFormat.Png);
 
             var lumaSaturated = GenerateSaturatedLuma(components.Standard, components.Luma);
 
