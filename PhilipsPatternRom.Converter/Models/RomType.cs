@@ -17,6 +17,6 @@ namespace PhilipsPatternRom.Converter.Models
         ChrominanceRY1,
         ChrominanceBY0,
         ChrominanceBY1,
-        VectorTable
+        CPU
     }
 }

@@ -26,6 +26,8 @@ namespace PhilipsPatternRom.Converter
 
         private List<Tuple<byte, byte, byte>> _sourceVectorEntries;
 
+        private List<Tuple<ConvertedComponents, ConvertedComponents, int>> _convertedComponents;
+
         private bool _invertNewSamples;
 
         private int _targetOffset;
@@ -33,13 +35,6 @@ namespace PhilipsPatternRom.Converter
         public RomGenerator()
         {
             _romManager = new RomManager();
-        }
-
-        public void LoadROMs(GeneratorType type, string directory)
-        {
-            _romManager.OpenSet(type, directory);
-
-            _targetOffset = _romManager.RomSize; // Starting offset for new patterns
         }
 
         private void LoadSourceVectors()
@@ -51,28 +46,51 @@ namespace PhilipsPatternRom.Converter
         {
             _invertNewSamples = true;
 
-            Init(directory);
+            LoadSamples(directory);
 
-            var ap1 = ConvertPattern(0, 0, _targetOffset);
+            var lastPattern = _convertedComponents.LastOrDefault();
+            var initialOffset = lastPattern != null ? lastPattern.Item3 : _targetOffset;
+
+            var ap1 = ConvertPattern(0, 0, initialOffset);
             var ap2 = ConvertPattern(580, ap1.NextLine, ap1.NextOffset);
 
-            for (int i = 0; i < _vectorTableLength; i++)
-            {
-                //if (!_vectorEntries.ContainsKey(i))
-                //{
-                //    throw new Exception("Missing vector entry " + i);
-                //}
-            }
+            _convertedComponents.Add(new Tuple<ConvertedComponents, ConvertedComponents, int>(ap1, ap2, ap2.NextOffset));
+
+            // CHECK VECTOR TABLES
         }
 
-        private void Init(string directory)
+        public void AddRegular(string directory)
         {
-            //_vectorEntries = new Dictionary<int, Tuple<byte, byte, byte>>();
+            _invertNewSamples = true;
+
+            LoadSamples(directory);
+
+            var lastPattern = _convertedComponents.LastOrDefault();
+            var initialOffset = lastPattern != null ? lastPattern.Item3 : _targetOffset;
+
+            var ap1 = ConvertPattern(0, 0, initialOffset);
+
+            _convertedComponents.Add(new Tuple<ConvertedComponents, ConvertedComponents, int>(ap1, null, ap1.NextOffset));
+        }
+
+        public void Save(string directory)
+        {
+            _romManager.RomSize = 0x80000;
+            _romManager.AppendComponents(_convertedComponents);
+            _romManager.SaveSet(directory);
+        }
+
+        public void Init(GeneratorType type, string directory)
+        {
             _ySamples = new List<ushort>();
             _rySamples = new List<ushort>();
             _bySamples = new List<ushort>();
+            _convertedComponents = new List<Tuple<ConvertedComponents, ConvertedComponents, int>>();
 
-            LoadSamples(directory);
+            _romManager.OpenSet(type, directory);
+
+            _targetOffset = _romManager.RomSize; // Starting offset for new patterns
+
             LoadSourceVectors();
 
             var backPorchVector = _sourceVectorEntries[5]; // Pick a line (any line) which has an appropriate back porch

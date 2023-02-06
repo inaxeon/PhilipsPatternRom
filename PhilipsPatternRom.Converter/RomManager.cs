@@ -19,9 +19,11 @@ namespace PhilipsPatternRom.Converter
 
         public GeneratorStandard Standard { get; private set; }
 
-        public int RomSize { get; private set; }
+        public int RomSize { get; set; }
 
         private List<RomPart> _set;
+        private int _vectorTableStart;
+        private int _vectorTableLength;
 
         public RomManager()
         {
@@ -45,7 +47,8 @@ namespace PhilipsPatternRom.Converter
             new RomPart(RomType.ChrominanceBY1, "EPROM_4008_102_56271_CSUM_2E0F.BIN", 0, 0x10000),
             //new RomPart(RomType.VectorTable,    "EPROM_4008_102_59371_CSUM_A100.BIN", 0x52F6, 0xD98), // Clock full
             //new RomPart(RomType.VectorTable,    "EPROM_4008_102_59371_CSUM_A100.BIN", 0x608E, 0xD98), // Clock half
-            new RomPart(RomType.VectorTable,    "EPROM_4008_102_59371_CSUM_A100.BIN", 0x6E26, 0xD98), // Clock off
+            //new RomPart(RomType.VectorTable,    "EPROM_4008_102_59371_CSUM_A100.BIN", 0x6E26, 0xD98), // Clock off
+            new RomPart(RomType.CPU,    "EPROM_4008_102_59371_CSUM_A100.BIN", 0, 0x10000), // Clock off
         };
 
         private static List<RomPart> Pm5644g913Parts = new List<RomPart>
@@ -59,7 +62,7 @@ namespace PhilipsPatternRom.Converter
             new RomPart(RomType.ChrominanceRY1, "EPROM_4008_102_58862_CSUM_81F9.BIN", 0, 0x80000),
             new RomPart(RomType.ChrominanceBY0, "EPROM_4008_102_58872_CSUM_B4C3.BIN", 0, 0x80000),
             new RomPart(RomType.ChrominanceBY1, "EPROM_4008_102_58882_CSUM_B4C3.BIN", 0, 0x80000),
-            new RomPart(RomType.VectorTable,    "EPROM_4008_102_58761_CSUM_1800.BIN", 0x50C8, 0x916),
+            new RomPart(RomType.CPU,    "EPROM_4008_102_58761_CSUM_1800.BIN", 0, 0x10000),
         };
 
         private static List<RomPart> Pm5644g924Parts = new List<RomPart>
@@ -73,7 +76,7 @@ namespace PhilipsPatternRom.Converter
             new RomPart(RomType.ChrominanceRY1, "EPROM_4008_002_00611_CSUM_F167.BIN", 0, 0x80000),
             new RomPart(RomType.ChrominanceBY0, "EPROM_4008_002_00621_CSUM_06E1.BIN", 0, 0x80000),
             new RomPart(RomType.ChrominanceBY1, "EPROM_4008_002_00631_CSUM_FFB8.BIN", 0, 0x80000),
-            new RomPart(RomType.VectorTable,    "EPROM_4008_002_00541_CSUM_B700.BIN", 0x6D1D, 0x918),
+            new RomPart(RomType.CPU,    "EPROM_4008_002_00541_CSUM_B700.BIN", 0, 0x10000),
         };
 
         private static List<RomPart> Pm5644m00Parts = new List<RomPart>
@@ -87,7 +90,7 @@ namespace PhilipsPatternRom.Converter
             new RomPart(RomType.ChrominanceRY1, "EPROM_4008_102_56801_CSUM_C1D0.BIN", 0, 0x10000),
             new RomPart(RomType.ChrominanceBY0, "EPROM_4008_102_56811_CSUM_B3AC.BIN", 0, 0x10000),
             new RomPart(RomType.ChrominanceBY1, "EPROM_4008_102_56821_CSUM_B3EC.BIN", 0, 0x10000),
-            new RomPart(RomType.VectorTable,    "EPROM_4008_102_59401_CSUM_7300.BIN", 0x5314, 0x113D),
+            new RomPart(RomType.CPU,    "EPROM_4008_102_59401_CSUM_7300.BIN", 0, 0x10000),
         };
 
         private static List<RomPart> Pm5644p00Parts = new List<RomPart>
@@ -101,7 +104,7 @@ namespace PhilipsPatternRom.Converter
             new RomPart(RomType.ChrominanceRY1, "EPROM_4008_102_56861_CSUM_0393.BIN", 0, 0x10000),
             new RomPart(RomType.ChrominanceBY0, "EPROM_4008_102_56831_CSUM_6C99.BIN", 0, 0x10000),
             new RomPart(RomType.ChrominanceBY1, "EPROM_4008_102_56841_CSUM_6CF9.BIN", 0, 0x10000),
-            new RomPart(RomType.VectorTable,    "EPROM_4008_102_59391_CSUM_0D00.BIN", 0x5314, 0x113D),
+            new RomPart(RomType.CPU,    "EPROM_4008_102_59391_CSUM_0D00.BIN", 0, 0x10000),
         };
 
         public void OpenSet(GeneratorType type, string directory)
@@ -117,22 +120,34 @@ namespace PhilipsPatternRom.Converter
                 case GeneratorType.Pm5644g00:
                     _set = Pm5644g00Parts;
                     Standard = GeneratorStandard.PAL;
+                    //_vectorTableStart = 0x6E26; //Clock off
+                    _vectorTableStart = 0x52F6; //Clock both
+
+                    _vectorTableLength = 0xD98;
                     break;
                 case GeneratorType.Pm5644g913:
                     _set = Pm5644g913Parts;
                     Standard = GeneratorStandard.PAL_16_9;
+                    _vectorTableStart = 0x50C8;
+                    _vectorTableLength = 0x916;
                     break;
                 case GeneratorType.Pm5644g924:
                     _set = Pm5644g924Parts;
                     Standard = GeneratorStandard.PAL_16_9;
+                    _vectorTableStart = 0x6D1D;
+                    _vectorTableLength = 0x918;
                     break;
                 case GeneratorType.Pm5644m00:
                     _set = Pm5644m00Parts;
                     Standard = GeneratorStandard.NTSC;
+                    _vectorTableStart = 0x5314;
+                    _vectorTableLength = 0x113D;
                     break;
                 case GeneratorType.Pm5644p00:
                     _set = Pm5644p00Parts;
                     Standard = GeneratorStandard.PAL_M;
+                    _vectorTableStart = 0x5314;
+                    _vectorTableLength = 0x113D;
                     break;
                 default:
                     throw new NotImplementedException();
@@ -195,19 +210,58 @@ namespace PhilipsPatternRom.Converter
                 ChrominanceBySamples.Add(chromBy1Data[i]);
             }
 
-            VectorTable = _set.Single(el => el.Type == RomType.VectorTable).Data.ToList();
+            VectorTable = _set.Single(el => el.Type == RomType.CPU).Data.Skip(_vectorTableStart).Take(_vectorTableLength).ToList();
         }
 
         public void SaveSet(string directory)
         {
-            var romLength = _set.Single(el => el.Type == RomType.Luminance0).Data.Length;
+            var romLength = LuminanceSamplesFull.Count / 4;
+
+            _set.Single(el => el.Type == RomType.Luminance0).Data = Enumerable.Repeat((byte)0xFF, RomSize).ToArray();
+            _set.Single(el => el.Type == RomType.Luminance1).Data = Enumerable.Repeat((byte)0xFF, RomSize).ToArray();
+            _set.Single(el => el.Type == RomType.Luminance2).Data = Enumerable.Repeat((byte)0xFF, RomSize).ToArray();
+            _set.Single(el => el.Type == RomType.Luminance3).Data = Enumerable.Repeat((byte)0xFF, RomSize).ToArray();
+            _set.Single(el => el.Type == RomType.LuminanceLSB).Data = Enumerable.Repeat((byte)0xFF, RomSize).ToArray();
+
+            _set.Single(el => el.Type == RomType.ChrominanceRY0).Data = Enumerable.Repeat((byte)0xFF, RomSize).ToArray();
+            _set.Single(el => el.Type == RomType.ChrominanceRY1).Data = Enumerable.Repeat((byte)0xFF, RomSize).ToArray();
+            _set.Single(el => el.Type == RomType.ChrominanceBY0).Data = Enumerable.Repeat((byte)0xFF, RomSize).ToArray();
+            _set.Single(el => el.Type == RomType.ChrominanceBY1).Data = Enumerable.Repeat((byte)0xFF, RomSize).ToArray();
 
             for (int i = 0; i < romLength; i++)
             {
-                _set.Single(el => el.Type == RomType.Luminance0).Data[i] = LuminanceSamples[(4 * i) + 0];
-                _set.Single(el => el.Type == RomType.Luminance1).Data[i] = LuminanceSamples[(4 * i) + 1];
-                _set.Single(el => el.Type == RomType.Luminance2).Data[i] = LuminanceSamples[(4 * i) + 2];
-                _set.Single(el => el.Type == RomType.Luminance3).Data[i] = LuminanceSamples[(4 * i) + 3];
+                _set.Single(el => el.Type == RomType.Luminance0).Data[i] = (byte)(LuminanceSamplesFull[(4 * i) + 0] >> 2);
+                _set.Single(el => el.Type == RomType.Luminance1).Data[i] = (byte)(LuminanceSamplesFull[(4 * i) + 1] >> 2);
+                _set.Single(el => el.Type == RomType.Luminance2).Data[i] = (byte)(LuminanceSamplesFull[(4 * i) + 2] >> 2);
+                _set.Single(el => el.Type == RomType.Luminance3).Data[i] = (byte)(LuminanceSamplesFull[(4 * i) + 3] >> 2);
+
+                byte lsb = 0;
+
+                if ((LuminanceSamplesFull[(4 * i) + 0] & 0x01) == 0x01)
+                    lsb |= 0x01;
+
+                if ((LuminanceSamplesFull[(4 * i) + 0] & 0x02) == 0x02)
+                    lsb |= 0x10;
+
+                if ((LuminanceSamplesFull[(4 * i) + 1] & 0x01) == 0x01)
+                    lsb |= 0x02;
+
+                if ((LuminanceSamplesFull[(4 * i) + 1] & 0x02) == 0x02)
+                    lsb |= 0x20;
+
+                if ((LuminanceSamplesFull[(4 * i) + 2] & 0x01) == 0x01)
+                    lsb |= 0x04;
+
+                if ((LuminanceSamplesFull[(4 * i) + 2] & 0x02) == 0x02)
+                    lsb |= 0x40;
+
+                if ((LuminanceSamplesFull[(4 * i) + 3] & 0x01) == 0x01)
+                    lsb |= 0x08;
+
+                if ((LuminanceSamplesFull[(4 * i) + 3] & 0x02) == 0x02)
+                    lsb |= 0x80;
+
+                _set.Single(el => el.Type == RomType.LuminanceLSB).Data[i] = lsb;
             }
 
             for (int i = 0; i < romLength; i++)
@@ -222,11 +276,67 @@ namespace PhilipsPatternRom.Converter
                 _set.Single(el => el.Type == RomType.ChrominanceBY1).Data[i] = ChrominanceBySamples[(2 * i) + 1];
             }
 
+            Directory.CreateDirectory(directory);
             Directory.SetCurrentDirectory(directory);
 
             foreach (var rom in _set)
-            {
                 rom.Save();
+        }
+
+        public void AppendComponents(List<Tuple<ConvertedComponents, ConvertedComponents, int>> componentsSet)
+        {
+            int extraPatternIndex = 1;
+            foreach (var components in componentsSet)
+            {
+                var vectorTable = new List<byte>();
+
+                LuminanceSamplesFull.AddRange(components.Item1.SamplesY.Select(el => el < 0 ? (ushort)0x3FF : (ushort)el));
+                ChrominanceRySamples.AddRange(components.Item1.SamplesRy.Select(el => el < 0 ? (byte)0xFF : (byte)el));
+                ChrominanceBySamples.AddRange(components.Item1.SamplesBy.Select(el => el < 0 ? (byte)0xFF : (byte)el));
+
+                for (int i = 0; i < 580; i++)
+                {
+                    var entry = components.Item1.VectorTable[i];
+
+                    vectorTable.Add(entry.Item1);
+                    vectorTable.Add(entry.Item2);
+                    vectorTable.Add(entry.Item3);
+                }
+
+                if (components.Item2 != null)
+                {
+                    LuminanceSamplesFull.AddRange(components.Item2.SamplesY.Select(el => el < 0 ? (ushort)0x3FF : (ushort)el));
+                    ChrominanceRySamples.AddRange(components.Item2.SamplesRy.Select(el => el < 0 ? (byte)0xFF : (byte)el));
+                    ChrominanceBySamples.AddRange(components.Item2.SamplesBy.Select(el => el < 0 ? (byte)0xFF : (byte)el));
+
+                    for (int i = 580; i < 1160; i++)
+                    {
+                        var entry = components.Item2.VectorTable[i];
+
+                        vectorTable.Add(entry.Item1);
+                        vectorTable.Add(entry.Item2);
+                        vectorTable.Add(entry.Item3);
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < 580; i++)
+                    {
+                        var entry = components.Item1.VectorTable[i];
+
+                        vectorTable.Add(entry.Item1);
+                        vectorTable.Add(entry.Item2);
+                        vectorTable.Add(entry.Item3);
+                    }
+                }
+
+                var set = _set.Single(el => el.Type == RomType.CPU);
+                var tableStart = _vectorTableStart + (_vectorTableLength * extraPatternIndex);
+
+                for (int i = tableStart; i < (tableStart + _vectorTableLength); i++)
+                    set.Data[i] = vectorTable[i - tableStart];
+
+                extraPatternIndex++;
             }
         }
     }
