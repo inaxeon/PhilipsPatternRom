@@ -48,7 +48,7 @@ namespace PhilipsPatternRom.Converter
             _romManager.OpenSet(type, directory);
             _type = type;
 
-            LoadVectors(directory);
+            LoadVectors();
 
             switch (_romManager.Standard)
             {
@@ -71,20 +71,9 @@ namespace PhilipsPatternRom.Converter
             }
         }
 
-        private void LoadVectors( string directory)
+        private void LoadVectors()
         {
-            if (_romManager.Standard == GeneratorStandard.PAL_16_9)
-            {
-                // Vector table is a different format for 16:9 units. Only two bytes are used per line - Address high and Control
-                // Kludge it into the same structure used for 4:3
-                for (int i = 0; i < _romManager.VectorTable.Count; i += 2)
-                    _vectorEntries.Add(new Tuple<byte, byte, byte>(_romManager.VectorTable[i + 1], _romManager.VectorTable[i + 0], _romManager.VectorTable[i + 1]));
-            }
-            else
-            {
-                for (int i = 0; i < _romManager.VectorTable.Count; i += 3)
-                    _vectorEntries.Add(new Tuple<byte, byte, byte>(_romManager.VectorTable[i + 0], _romManager.VectorTable[i + 1], _romManager.VectorTable[i + 2]));
-            }
+            _vectorEntries = Utility.LoadVectors(_romManager, _romManager.Standard);
         }
 
         public void SetMarkers(int xs, int xe, int ys, int ye)
@@ -207,27 +196,9 @@ namespace PhilipsPatternRom.Converter
                     break;
             }
 
-            byte[] lsbSequence = null;
-
-            switch (entry.Item1 & 0x03)
-            {
-                case 0:
-                    lsbSequence = new byte[] { 0x00, 0x00, 0x40 };
-                    break;
-                case 1:
-                    lsbSequence = new byte[] { 0x00, 0x80, 0x40 };
-                    break;
-                case 2:
-                    lsbSequence = new byte[] { 0x80, 0x00, 0xC0 };
-                    break;
-                case 3:
-                    lsbSequence = new byte[] { 0x80, 0x80, 0xC0 };
-                    break;
-            }
-
-            int addr1 = (entry.Item2 << 8 | lsbSequence[0]) * romsPerComponent;
-            int addr2 = (entry.Item3 << 8 | lsbSequence[1]) * romsPerComponent;
-            int addr3 = (entry.Item2 << 8 | lsbSequence[2]) * romsPerComponent;
+            int addr1 = Utility.DecodeVector(entry, Utility.SampleType.BackPorch, romsPerComponent);
+            int addr2 = Utility.DecodeVector(entry, Utility.SampleType.Centre, romsPerComponent);
+            int addr3 = Utility.DecodeVector(entry, Utility.SampleType.FrontPorch, romsPerComponent);
 
             render(bitmap, addr1, addr1 + backSpriteLength, false);
             render(bitmap, addr2, addr2 + centreLength, false);

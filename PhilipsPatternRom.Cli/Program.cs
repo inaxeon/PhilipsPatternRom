@@ -12,6 +12,8 @@ namespace PhilipsPatternRom.Cli
 {
     class Program
     {
+        // /Generator Pm5644g00 /InROMs "N:\Electronics\Analog TV\PM5644\PM5644G00" /AddApPattern "C:\Dev\PTV\PT5230\PT8633\TPD\BILLEDDATA\Data fra PTV_Brandskab\G\PHIL16X9\TXT_M_AP" /OutROMs  "N:\Electronics\Analog TV\PM5644\PM5644G00_Modified"
+        // /Generator Pm5644g00 /InROMs "N:\Electronics\Analog TV\PM5644\PM5644G00" /RenderPattern
         static void Main(string[] args)
         {
             var antiPalPatternsToAdd = new List<string>();
@@ -69,7 +71,7 @@ namespace PhilipsPatternRom.Cli
                 case OperationType.RenderPattern:
                     {
 
-                        ConvertRawBitmapsToProcessedBitmaps(type, args[1]);
+                        ConvertRawBitmapsToProcessedBitmaps(type, inputDir);
                         break;
                     }
                 case OperationType.AddPattern:
@@ -169,6 +171,8 @@ namespace PhilipsPatternRom.Cli
                     aspectRatioAdjustment = 0.91f;
                     break;
             }
+
+            components.Luma.Save("PM5644_Luma.png", ImageFormat.Png);
 
             var lumaSaturated = GenerateSaturatedLuma(components.Standard, components.Luma);
 
