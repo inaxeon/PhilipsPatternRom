@@ -51,6 +51,20 @@ namespace PhilipsPatternRom.Converter
             new RomPart(RomType.CPU,    "EPROM_4008_102_59371_CSUM_A100.BIN", 0, 0x10000), // Clock off
         };
 
+        private static List<RomPart> Pm5644g00ExtendedParts = new List<RomPart>
+        {
+            new RomPart(RomType.Luminance0,     "EPROM_4008_102_56191_CSUM_9A6A.BIN", 0, 0x80000),
+            new RomPart(RomType.Luminance1,     "EPROM_4008_102_56201_CSUM_4E67.BIN", 0, 0x80000),
+            new RomPart(RomType.Luminance2,     "EPROM_4008_102_56211_CSUM_3172.BIN", 0, 0x80000),
+            new RomPart(RomType.Luminance3,     "EPROM_4008_102_56221_CSUM_7F95.BIN", 0, 0x80000),
+            new RomPart(RomType.LuminanceLSB,   "EPROM_4008_102_56231_CSUM_78C4.BIN", 0, 0x80000),
+            new RomPart(RomType.ChrominanceRY0, "EPROM_4008_102_56241_CSUM_F0DF.BIN", 0, 0x80000),
+            new RomPart(RomType.ChrominanceRY1, "EPROM_4008_102_56251_CSUM_F397.BIN", 0, 0x80000),
+            new RomPart(RomType.ChrominanceBY0, "EPROM_4008_102_56261_CSUM_2DA9.BIN", 0, 0x80000),
+            new RomPart(RomType.ChrominanceBY1, "EPROM_4008_102_56271_CSUM_2E0F.BIN", 0, 0x80000),
+            new RomPart(RomType.CPU,            "EPROM_4008_102_59371_CSUM_A100.BIN", 0, 0x10000),
+        };
+
         private static List<RomPart> Pm5644g913Parts = new List<RomPart>
         {
             new RomPart(RomType.Luminance0,     "EPROM_4008_102_58802_CSUM_A64A.BIN", 0, 0x80000),
@@ -107,7 +121,7 @@ namespace PhilipsPatternRom.Converter
             new RomPart(RomType.CPU,    "EPROM_4008_102_59391_CSUM_0D00.BIN", 0, 0x10000),
         };
 
-        public void OpenSet(GeneratorType type, string directory)
+        public void OpenSet(GeneratorType type, string directory, int vectorTableIndex)
         {
             Directory.SetCurrentDirectory(directory);
 
@@ -120,9 +134,13 @@ namespace PhilipsPatternRom.Converter
                 case GeneratorType.Pm5644g00:
                     _set = Pm5644g00Parts;
                     Standard = GeneratorStandard.PAL;
-                    //_vectorTableStart = 0x6E26; //Clock off
-                    _vectorTableStart = 0x52F6; //Clock both
-
+                    _vectorTableStart = 0x52F6;
+                    _vectorTableLength = 0xD98;
+                    break;
+                case GeneratorType.Pm5644g00Extended:
+                    _set = Pm5644g00ExtendedParts;
+                    Standard = GeneratorStandard.PAL;
+                    _vectorTableStart = 0x52F6;
                     _vectorTableLength = 0xD98;
                     break;
                 case GeneratorType.Pm5644g913:
@@ -210,7 +228,8 @@ namespace PhilipsPatternRom.Converter
                 ChrominanceBySamples.Add(chromBy1Data[i]);
             }
 
-            VectorTable = _set.Single(el => el.Type == RomType.CPU).Data.Skip(_vectorTableStart).Take(_vectorTableLength).ToList();
+            VectorTable = _set.Single(el => el.Type == RomType.CPU).Data.Skip(_vectorTableStart +
+                (_vectorTableLength * vectorTableIndex)).Take(_vectorTableLength).ToList();
         }
 
         public void SaveSet(string directory)
@@ -283,9 +302,8 @@ namespace PhilipsPatternRom.Converter
                 rom.Save();
         }
 
-        public void AppendComponents(List<Tuple<ConvertedComponents, ConvertedComponents, int>> componentsSet)
+        public void AppendComponents(List<Tuple<ConvertedComponents, ConvertedComponents, int>> componentsSet, int outputPatternIndex)
         {
-            int extraPatternIndex = 1;
             foreach (var components in componentsSet)
             {
                 var vectorTable = new List<byte>();
@@ -331,12 +349,12 @@ namespace PhilipsPatternRom.Converter
                 }
 
                 var set = _set.Single(el => el.Type == RomType.CPU);
-                var tableStart = _vectorTableStart + (_vectorTableLength * extraPatternIndex);
+                var tableStart = _vectorTableStart + (_vectorTableLength * outputPatternIndex);
 
                 for (int i = tableStart; i < (tableStart + _vectorTableLength); i++)
                     set.Data[i] = vectorTable[i - tableStart];
 
-                extraPatternIndex++;
+                outputPatternIndex++;
             }
         }
     }

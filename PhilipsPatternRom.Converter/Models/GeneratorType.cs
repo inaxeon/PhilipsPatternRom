@@ -10,6 +10,7 @@ namespace PhilipsPatternRom.Converter.Models
     {
         None,
         Pm5644g00,
+        Pm5644g00Extended,
         Pm5644g913,
         Pm5644g924,
         Pm5644m00,

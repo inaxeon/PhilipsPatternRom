@@ -39,6 +39,7 @@ namespace PhilipsPatternRom.Converter
         public static int DecodeVector(Tuple<byte, byte, byte> vector, SampleType type, int romsPerComponent)
         {
             byte[] lsbSequence = null;
+            int addr = 0;
 
             switch (vector.Item1 & 0x03)
             {
@@ -59,14 +60,31 @@ namespace PhilipsPatternRom.Converter
             switch (type)
             {
                 case SampleType.BackPorch:
-                    return (vector.Item2 << 8 | lsbSequence[0]) * romsPerComponent;
+                    addr = (vector.Item2 << 8 | lsbSequence[0]);
+                    break;
                 case SampleType.Centre:
-                    return (vector.Item3 << 8 | lsbSequence[1]) * romsPerComponent;
+                    addr = (vector.Item3 << 8 | lsbSequence[1]);
+                    break;
                 case SampleType.FrontPorch:
-                    return (vector.Item2 << 8 | lsbSequence[2]) * romsPerComponent;
+                    addr = (vector.Item2 << 8 | lsbSequence[2]);
+                    break;
                 default:
                     throw new NotSupportedException();
             }
+
+            if ((addr & 0x100) == 0 && (vector.Item1 & 0x20) == 0x20)
+                addr |= 0x10000;
+
+            if ((addr & 0x100) == 0x100 && (vector.Item1 & 0x10) == 0x10)
+                addr |= 0x10000;
+
+            if ((vector.Item1 & 0x04) == 0x04)
+                addr |= 0x20000;
+
+            if ((vector.Item1 & 0x08) == 0x08)
+                addr |= 0x40000;
+
+            return addr * romsPerComponent;
         }
     }
 }

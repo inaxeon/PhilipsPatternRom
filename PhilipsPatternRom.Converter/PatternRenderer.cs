@@ -43,9 +43,9 @@ namespace PhilipsPatternRom.Converter
             _vectorEntries = new List<Tuple<byte, byte, byte>>();
         }
 
-        public void LoadPattern(GeneratorType type, string directory)
+        public void LoadPattern(GeneratorType type, string directory, int patternIndex)
         {
-            _romManager.OpenSet(type, directory);
+            _romManager.OpenSet(type, directory, patternIndex);
             _type = type;
 
             LoadVectors();
@@ -97,9 +97,9 @@ namespace PhilipsPatternRom.Converter
             var components = new PatternComponents();
             _patternData = new PatternData();
 
+            components.Luma = GenerateBitmapFromSpriteRomSet(PatternType.Luma, PatternSubType.DeInterlaced);
             components.ChromaRy = GenerateBitmapFromSpriteRomSet(PatternType.RminusY, PatternSubType.DeInterlaced);
             components.ChromaBy = GenerateBitmapFromSpriteRomSet(PatternType.BminusY, PatternSubType.DeInterlaced);
-            components.Luma = GenerateBitmapFromSpriteRomSet(PatternType.Luma, PatternSubType.DeInterlaced);
             components.Standard = _romManager.Standard;
 
             return components;
@@ -166,8 +166,6 @@ namespace PhilipsPatternRom.Converter
                 DrawLine(bitmap, type, _vectorEntries[linesPerField + 1]);
             }
 
-            var sorted = _patternData.Fragments.Values.OrderBy(el => el.Address).ToList();
-
             return bitmap;
         }
 
@@ -199,6 +197,8 @@ namespace PhilipsPatternRom.Converter
             int addr1 = Utility.DecodeVector(entry, Utility.SampleType.BackPorch, romsPerComponent);
             int addr2 = Utility.DecodeVector(entry, Utility.SampleType.Centre, romsPerComponent);
             int addr3 = Utility.DecodeVector(entry, Utility.SampleType.FrontPorch, romsPerComponent);
+
+            var center = addr2 / 4;
 
             render(bitmap, addr1, addr1 + backSpriteLength, false);
             render(bitmap, addr2, addr2 + centreLength, false);

@@ -37,7 +37,7 @@ namespace PhilipsPatternRom.Converter
 
         public void Save()
         {
-            File.WriteAllBytes(Path.GetFileNameWithoutExtension(_fileName), Data);
+            File.WriteAllBytes(Path.GetFileNameWithoutExtension(_fileName) + ".bin", Data);
         }
     }
 }
