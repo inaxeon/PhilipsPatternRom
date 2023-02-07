@@ -159,7 +159,7 @@ namespace PhilipsPatternRom.Converter
                     _set = Pm5644m00Parts;
                     Standard = GeneratorStandard.NTSC;
                     _vectorTableStart = 0x5314;
-                    _vectorTableLength = 0x113D;
+                    _vectorTableLength = 0x5B8;
                     break;
                 case GeneratorType.Pm5644p00:
                     _set = Pm5644p00Parts;

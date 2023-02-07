@@ -55,8 +55,6 @@ namespace PhilipsPatternRom.Converter
             var ap2 = ConvertPattern(580, ap1.NextLine, ap1.NextOffset);
 
             _convertedComponents.Add(new Tuple<ConvertedComponents, ConvertedComponents, int>(ap1, ap2, ap2.NextOffset));
-
-            // CHECK VECTOR TABLES
         }
 
         public void AddRegular(string directory)
@@ -232,13 +230,6 @@ namespace PhilipsPatternRom.Converter
             // Skip 133 samples from the new pattern
             // Take 736 samples from the new pattern
 
-            // Now we have 864 of the new - but - they must be laid out differently:
-
-            // After 736 samples there must be a gap
-            // Resume the rest at 768
-            // With the last 128 that is 896 total per line
-            // 0x00-0xE0 per rom. The rest per line is wasted.
-
             switch (type)
             {
                 case PatternType.Luma:
@@ -273,11 +264,9 @@ namespace PhilipsPatternRom.Converter
                 }
             }
 
-            //outSamples.AddRange(Enumerable.Repeat(-1, centreGap));
-            //outSamples.AddRange(Enumerable.Repeat(-1, frontPorchGap));
-
             var finalSamples = new List<int>();
 
+            // Lay the samples out as per vector type 2, which works rather nicely for this
             finalSamples.AddRange(lineSamples.Skip(backPorchSize).Take(centreSize));
             finalSamples.AddRange(lineSamples.Take(backPorchSize));
             finalSamples.AddRange(lineSamples.Skip(maxBackAndCentreSamples));
@@ -344,7 +333,7 @@ namespace PhilipsPatternRom.Converter
             // Centre: 512
             // Min: 176
 
-            decimal originalMax = type == PatternType.RminusY ? 193m : 174m;
+            var originalMax = type == PatternType.RminusY ? 193 : 174;
             var originalCentre = 128;
 
             var newMax = 848;

@@ -12,8 +12,8 @@ namespace PhilipsPatternRom.Cli
 {
     class Program
     {
-        // /Generator Pm5644g00 /InROMs "N:\Electronics\Analog TV\PM5644\PM5644G00" /InputPatternIndex 2 /OutputPatternIndex 0 /AddApPattern "C:\Dev\PTV\PT5230\PT8633\TPD\BILLEDDATA\Data fra PTV_Brandskab\G\PHIL16X9\TXT_M_AP" /AddPattern "C:\Dev\PTV\PT5230\PT8633\TPD\BILLEDDATA\FUBK16X9\U_ANTIPA" /OutROMs  "N:\Electronics\Analog TV\PM5644\PM5644G00_Modified"
-        // /Generator Pm5644g00 /InROMs "N:\Electronics\Analog TV\PM5644\PM5644G00" /RenderPattern /InputPatternIndex 2
+        // /Generator Pm5644g00 /InROMs "N:\Electronics\Analog TV\PM5644\PM5644G00" /InputPatternIndex 2 /OutputPatternIndex 0 /AddApPattern "C:\Dev\PTV\PT5230\PT8633\TPD\BILLEDDATA\Data fra PTV_Brandskab\G\PHIL16X9\TXT_M_AP" /AddPattern "C:\Dev\PTV\PT5230\PT8633\TPD\BILLEDDATA\FUBK4X3\U_ANTIPA" /OutROMs "N:\Electronics\Analog TV\PM5644\PM5644G00_Modified"
+        // /Generator Pm5644g00 /InROMs "N:\Electronics\Analog TV\PM5644\PM5644G00" /RenderPattern /InputPatternIndex 2 /InputPatternFrame 1
         // /Generator Pm5644g00 /InROMs "N:\Electronics\Analog TV\PM5644\PM5644G00_Modified" /RenderPattern /InputPatternIndex 0
         static void Main(string[] args)
         {
@@ -21,7 +21,9 @@ namespace PhilipsPatternRom.Cli
             var regularPatternsToAdd = new List<string>();
             string inputDir = null;
             string outputDir = null;
+            bool matchSource = true;
             int inputPatternIndex = -1;
+            int inputPatternFrame = 0;
             int outputPatternIndex = -1;
             OperationType operation = OperationType.None;
             Converter.Models.GeneratorType type = PhilipsPatternRom.Converter.Models.GeneratorType.None;
@@ -37,8 +39,14 @@ namespace PhilipsPatternRom.Cli
                         operation = OperationType.AddPattern;
                         antiPalPatternsToAdd.Add(args[++i]);
                         break;
+                    case "/Exact":
+                        matchSource = false;
+                        break;
                     case "/InputPatternIndex":
                         inputPatternIndex = int.Parse(args[++i]);
+                        break;
+                    case "/InputPatternFrame":
+                        inputPatternFrame = int.Parse(args[++i]);
                         break;
                     case "/OutputPatternIndex":
                         outputPatternIndex = int.Parse(args[++i]);
@@ -89,7 +97,7 @@ namespace PhilipsPatternRom.Cli
             {
                 case OperationType.RenderPattern:
                     {
-                        ConvertRawBitmapsToProcessedBitmaps(type, inputDir, inputPatternIndex);
+                        ConvertRawBitmapsToProcessedBitmaps(type, inputDir, inputPatternIndex, inputPatternFrame, matchSource);
                         break;
                     }
                 case OperationType.AddPattern:
@@ -136,7 +144,7 @@ namespace PhilipsPatternRom.Cli
         /// <summary>
         /// Process the bitmap representations of the EPROM contents for viewing on computer screens
         /// </summary>
-        static void ConvertRawBitmapsToProcessedBitmaps(PhilipsPatternRom.Converter.Models.GeneratorType type, string directory, int patternIndex)
+        static void ConvertRawBitmapsToProcessedBitmaps(PhilipsPatternRom.Converter.Models.GeneratorType type, string directory, int patternIndex, int patternFrame, bool matchSource)
         {
             int cropX = 0;
             int cropY = 0;
@@ -149,8 +157,8 @@ namespace PhilipsPatternRom.Cli
             float aspectRatioAdjustment = 0f;
 
             var renderer = new PatternRenderer();
-            renderer.LoadPattern(type, directory, patternIndex);
-            var components = renderer.GeneratePatternComponents();
+            renderer.LoadPattern(type, directory, patternIndex, matchSource);
+            var components = renderer.GeneratePatternComponents(patternFrame);
 
             switch (components.Standard)
             {
@@ -158,7 +166,7 @@ namespace PhilipsPatternRom.Cli
                     cropX = 144;
                     cropY = 0;
                     cropWidth = 707;
-                    cropHeight = 576;
+                    cropHeight = matchSource ? 576 : 580;
                     rYrange = 65;
                     bYrange = 46;
                     invertRy = true;
@@ -178,9 +186,9 @@ namespace PhilipsPatternRom.Cli
                     break;
                 case Converter.Models.GeneratorStandard.NTSC:
                     cropX = 135;
-                    cropY = 3;
+                    cropY = 0;
                     cropWidth = 714;
-                    cropHeight = 483;
+                    cropHeight = matchSource ? 486 : 488;
                     rYrange = 59;
                     bYrange = 41;
                     invertRy = false;
@@ -189,9 +197,9 @@ namespace PhilipsPatternRom.Cli
                     break;
                 case Converter.Models.GeneratorStandard.PAL_M:
                     cropX = 135;
-                    cropY = 3;
+                    cropY = 0;
                     cropWidth = 714;
-                    cropHeight = 483;
+                    cropHeight = matchSource ? 486 : 488;
                     rYrange = 59;
                     bYrange = 41;
                     invertRy = true;

@@ -29,6 +29,7 @@ namespace PhilipsPatternRom.Converter
         private int _centreLength;
         private int _backSpriteLength;
         private int _frontSpriteLength;
+        private bool _matchSource;
         private GeneratorType _type;
 
         // Offset from stripe generator UI for various experimental fiddling
@@ -43,10 +44,11 @@ namespace PhilipsPatternRom.Converter
             _vectorEntries = new List<Tuple<byte, byte, byte>>();
         }
 
-        public void LoadPattern(GeneratorType type, string directory, int patternIndex)
+        public void LoadPattern(GeneratorType type, string directory, int patternIndex, bool matchSource)
         {
             _romManager.OpenSet(type, directory, patternIndex);
             _type = type;
+            _matchSource = matchSource;
 
             LoadVectors();
 
@@ -92,20 +94,20 @@ namespace PhilipsPatternRom.Converter
             _veMarker = null;
         }
 
-        public PatternComponents GeneratePatternComponents()
+        public PatternComponents GeneratePatternComponents(int patternFrame)
         {
             var components = new PatternComponents();
             _patternData = new PatternData();
 
-            components.Luma = GenerateBitmapFromSpriteRomSet(PatternType.Luma, PatternSubType.DeInterlaced);
-            components.ChromaRy = GenerateBitmapFromSpriteRomSet(PatternType.RminusY, PatternSubType.DeInterlaced);
-            components.ChromaBy = GenerateBitmapFromSpriteRomSet(PatternType.BminusY, PatternSubType.DeInterlaced);
+            components.Luma = GenerateBitmapFromSpriteRomSet(PatternType.Luma, PatternSubType.DeInterlaced, patternFrame);
+            components.ChromaRy = GenerateBitmapFromSpriteRomSet(PatternType.RminusY, PatternSubType.DeInterlaced, patternFrame);
+            components.ChromaBy = GenerateBitmapFromSpriteRomSet(PatternType.BminusY, PatternSubType.DeInterlaced, patternFrame);
             components.Standard = _romManager.Standard;
 
             return components;
         }
 
-        private Bitmap GenerateBitmapFromSpriteRomSet(PatternType type, PatternSubType subType)
+        private Bitmap GenerateBitmapFromSpriteRomSet(PatternType type, PatternSubType subType, int patternFrame)
         {
             var centreLength = _centreLength * (type == PatternType.Luma || type == PatternType.LumaLSB ? 4 : 2);
             var backSpriteLength = _backSpriteLength * (type == PatternType.Luma || type == PatternType.LumaLSB ? 4 : 2);
@@ -119,7 +121,7 @@ namespace PhilipsPatternRom.Converter
                     linesPerField = _vectorEntries.Count / 4;
                     break;
                 case GeneratorStandard.NTSC:
-                    linesPerField = _vectorEntries.Count / 6;
+                    linesPerField = _vectorEntries.Count / 2;
                     break;
                 case GeneratorStandard.PAL_M:
                     linesPerField = _vectorEntries.Count / 6;
@@ -131,7 +133,9 @@ namespace PhilipsPatternRom.Converter
                 default:
                     throw new NotImplementedException();
             }
-       
+
+            var startLine = (linesPerField * 2) * patternFrame;
+
             var lineWidth = backSpriteLength + centreLength + frontSpriteLength;
             var bitmap = new Bitmap(lineWidth, subType == PatternSubType.DeInterlaced ? linesPerField * 2 : linesPerField);
 
@@ -151,19 +155,50 @@ namespace PhilipsPatternRom.Converter
                     DrawLine_WideScreen(bitmap, type, entry);
                 }
             }
-            else
-            {
-                DrawLine(bitmap, type, _vectorEntries[0]);
-                DrawLine(bitmap, type, _vectorEntries[linesPerField - 1]);
 
-                for (int i = 2; i < (linesPerField - 2); i++)
+            if (_matchSource)
+            {
+                if (_romManager.Standard == GeneratorStandard.PAL)
                 {
-                    DrawLine(bitmap, type, _vectorEntries[i + linesPerField]);
-                    DrawLine(bitmap, type, _vectorEntries[i]);
+                    // Recreate source from vector table. Not an exact science.
+
+                    DrawLine(bitmap, type, _vectorEntries[startLine + 0]);
+                    DrawLine(bitmap, type, _vectorEntries[startLine + linesPerField - 1]);
+
+                    for (int i = 2; i < (linesPerField - 2); i++)
+                    {
+                        DrawLine(bitmap, type, _vectorEntries[startLine + i + linesPerField]);
+                        DrawLine(bitmap, type, _vectorEntries[startLine + i]);
+                    }
+
+                    DrawLine(bitmap, type, _vectorEntries[startLine + 1]);
+                    DrawLine(bitmap, type, _vectorEntries[startLine + linesPerField + 1]);
                 }
 
-                DrawLine(bitmap, type, _vectorEntries[1]);
-                DrawLine(bitmap, type, _vectorEntries[linesPerField + 1]);
+                if (_romManager.Standard == GeneratorStandard.NTSC || _romManager.Standard == GeneratorStandard.PAL_M)
+                {
+                    // Recreate source from vector table. Not an exact science.
+
+                    DrawLine(bitmap, type, _vectorEntries[startLine + linesPerField + 1]);
+                    DrawLine(bitmap, type, _vectorEntries[startLine + 0]);
+
+                    for (int i = 2; i < linesPerField - 1; i++)
+                    {
+                        DrawLine(bitmap, type, _vectorEntries[startLine + i + linesPerField]);
+                        DrawLine(bitmap, type, _vectorEntries[startLine + i]);
+                    }
+
+                    DrawLine(bitmap, type, _vectorEntries[startLine + linesPerField + 2]);
+                    DrawLine(bitmap, type, _vectorEntries[startLine + 1]);
+                }
+            }
+            else
+            {
+                // Fire out the image exactly as it appears in the vector table.
+                // Gives a shitty rendition but useful for checking.
+
+                for (int i = 0; i < linesPerField * 2; i++)
+                    DrawLine(bitmap, type, _vectorEntries[startLine + i]);
             }
 
             return bitmap;
