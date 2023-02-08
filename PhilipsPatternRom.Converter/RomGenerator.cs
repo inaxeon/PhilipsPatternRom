@@ -172,25 +172,24 @@ namespace PhilipsPatternRom.Converter
 
             int i = 0;
 
+            // Right side castellation
             ConvertAllSamples(ret, line++, offset);
             ret.VectorTable[baseVector] = GetVectorForOffset(offset);
             offset += _lineLength;
 
-            ConvertAllSamples(ret, line++, offset);
-            ret.VectorTable[baseVector + (_linesPerField - 1)] = GetVectorForOffset(offset);
-            offset += _lineLength;
+            line += 3;
 
-            for (i = 2; i < (_linesPerField - 2); i++)
+            for (i = 2; i < (_linesPerField - 4); i++)
             {
-                var alternateField = i + _linesPerField;
+                var alternateField = i + _linesPerField + 1;
 
                 ConvertAllSamples(ret, line++, offset);
-                ret.VectorTable[baseVector + alternateField] = GetVectorForOffset(offset);
+                ret.VectorTable[baseVector + i] = GetVectorForOffset(offset);
 
                 offset += _lineLength;
 
                 ConvertAllSamples(ret, line++, offset);
-                ret.VectorTable[baseVector + i] = GetVectorForOffset(offset);
+                ret.VectorTable[baseVector + alternateField] = GetVectorForOffset(offset);
                 offset += _lineLength;
             }
 
@@ -202,11 +201,24 @@ namespace PhilipsPatternRom.Converter
             ret.VectorTable[baseVector + _linesPerField + 1] = GetVectorForOffset(offset);
             offset += _lineLength;
 
-            //Dupes
+            // Skip the second to last line. Only want the last line.
+            line++;
+
+            // Left side castellation
+            ConvertAllSamples(ret, line++, offset);
+            ret.VectorTable[baseVector + 291] = GetVectorForOffset(offset);
+            offset += _lineLength;
+
+            // Extra full lines of border castellation not all of which are in the source pattern
+            ret.VectorTable[baseVector + 286] = ret.VectorTable[baseVector + 1];
+            ret.VectorTable[baseVector + 287] = ret.VectorTable[baseVector + 1];
+            ret.VectorTable[baseVector + 288] = ret.VectorTable[baseVector + 1];
+            ret.VectorTable[baseVector + 289] = ret.VectorTable[baseVector + 1];
             ret.VectorTable[baseVector + 290] = ret.VectorTable[baseVector + 1];
+            ret.VectorTable[baseVector + 292] = ret.VectorTable[baseVector + 1];
+            ret.VectorTable[baseVector + 577] = ret.VectorTable[baseVector + 1];
             ret.VectorTable[baseVector + 578] = ret.VectorTable[baseVector + 1];
             ret.VectorTable[baseVector + 579] = ret.VectorTable[baseVector + 1];
-            ret.VectorTable[baseVector + 288] = ret.VectorTable[baseVector + 289];
 
             ret.NextOffset = offset;
             ret.NextLine = line;
@@ -226,19 +238,6 @@ namespace PhilipsPatternRom.Converter
 
             int i = 0;
             int line = 0;
-            /*
-            DrawLine(bitmap, type, _vectorEntries[baseVector + _linesPerField + 1]);
-            DrawLine(bitmap, type, _vectorEntries[baseVector + 0]);
-
-            for (int i = 2; i < linesPerField - 1; i++)
-            {
-                DrawLine(bitmap, type, _vectorEntries[baseVector + i + _linesPerField]);
-                DrawLine(bitmap, type, _vectorEntries[baseVector + i]);
-            }
-
-            DrawLine(bitmap, type, _vectorEntries[baseVector + _linesPerField + 2]);
-            DrawLine(bitmap, type, _vectorEntries[baseVector + 1]);
-                    */
 
             ConvertAllSamples(ret, 1, offset);
             ret.VectorTable[0] = GetVectorForOffset(offset);
