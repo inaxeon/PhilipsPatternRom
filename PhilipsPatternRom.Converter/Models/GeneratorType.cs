@@ -14,6 +14,7 @@ namespace PhilipsPatternRom.Converter.Models
         Pm5644g913,
         Pm5644g924,
         Pm5644m00,
+        Pm5644m00Extended,
         Pm5644p00,
     }
 }

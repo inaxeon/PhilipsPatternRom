@@ -107,6 +107,20 @@ namespace PhilipsPatternRom.Converter
             new RomPart(RomType.CPU,    "EPROM_4008_102_59401_CSUM_7300.BIN", 0, 0x10000),
         };
 
+        private static List<RomPart> Pm5644m00ExtendedParts = new List<RomPart>
+        {
+            new RomPart(RomType.Luminance0,     "EPROM_4008_102_56741_CSUM_0D4A.BIN", 0, 0x80000),
+            new RomPart(RomType.Luminance1,     "EPROM_4008_102_56751_CSUM_F7B6.BIN", 0, 0x80000),
+            new RomPart(RomType.Luminance2,     "EPROM_4008_102_56761_CSUM_03DF.BIN", 0, 0x80000),
+            new RomPart(RomType.Luminance3,     "EPROM_4008_102_56771_CSUM_1A71.BIN", 0, 0x80000),
+            new RomPart(RomType.LuminanceLSB,   "EPROM_4008_102_56781_CSUM_8E52.BIN", 0, 0x80000),
+            new RomPart(RomType.ChrominanceRY0, "EPROM_4008_102_56791_CSUM_C1EA.BIN", 0, 0x80000),
+            new RomPart(RomType.ChrominanceRY1, "EPROM_4008_102_56801_CSUM_C1D0.BIN", 0, 0x80000),
+            new RomPart(RomType.ChrominanceBY0, "EPROM_4008_102_56811_CSUM_B3AC.BIN", 0, 0x80000),
+            new RomPart(RomType.ChrominanceBY1, "EPROM_4008_102_56821_CSUM_B3EC.BIN", 0, 0x80000),
+            new RomPart(RomType.CPU,    "EPROM_4008_102_59401_CSUM_7300.BIN", 0, 0x10000),
+        };
+
         private static List<RomPart> Pm5644p00Parts = new List<RomPart>
         {
             new RomPart(RomType.Luminance0,     "EPROM_4008_102_57161_CSUM_E601.BIN", 0, 0x10000),
@@ -159,7 +173,13 @@ namespace PhilipsPatternRom.Converter
                     _set = Pm5644m00Parts;
                     Standard = GeneratorStandard.NTSC;
                     _vectorTableStart = 0x5314;
-                    _vectorTableLength = 0x5B8;
+                    _vectorTableLength = 0x5BE;
+                    break;
+                case GeneratorType.Pm5644m00Extended:
+                    _set = Pm5644m00ExtendedParts;
+                    Standard = GeneratorStandard.NTSC;
+                    _vectorTableStart = 0x5314;
+                    _vectorTableLength = 0x5BE;
                     break;
                 case GeneratorType.Pm5644p00:
                     _set = Pm5644p00Parts;
@@ -304,6 +324,8 @@ namespace PhilipsPatternRom.Converter
 
         public void AppendComponents(List<Tuple<ConvertedComponents, ConvertedComponents, int>> componentsSet, int outputPatternIndex)
         {
+            var vectorTableEntryCount = VectorTable.Count / 3;
+
             foreach (var components in componentsSet)
             {
                 var vectorTable = new List<byte>();
@@ -312,7 +334,7 @@ namespace PhilipsPatternRom.Converter
                 ChrominanceRySamples.AddRange(components.Item1.SamplesRy.Select(el => el < 0 ? (byte)0xFF : (byte)el));
                 ChrominanceBySamples.AddRange(components.Item1.SamplesBy.Select(el => el < 0 ? (byte)0xFF : (byte)el));
 
-                for (int i = 0; i < 580; i++)
+                for (int i = 0; i < (vectorTableEntryCount / (Standard == GeneratorStandard.NTSC ? 1 : 2)); i++)
                 {
                     var entry = components.Item1.VectorTable[i];
 
@@ -321,30 +343,33 @@ namespace PhilipsPatternRom.Converter
                     vectorTable.Add(entry.Item3);
                 }
 
-                if (components.Item2 != null)
+                if (Standard != GeneratorStandard.NTSC)
                 {
-                    LuminanceSamplesFull.AddRange(components.Item2.SamplesY.Select(el => el < 0 ? (ushort)0x3FF : (ushort)el));
-                    ChrominanceRySamples.AddRange(components.Item2.SamplesRy.Select(el => el < 0 ? (byte)0xFF : (byte)el));
-                    ChrominanceBySamples.AddRange(components.Item2.SamplesBy.Select(el => el < 0 ? (byte)0xFF : (byte)el));
-
-                    for (int i = 580; i < 1160; i++)
+                    if (components.Item2 != null)
                     {
-                        var entry = components.Item2.VectorTable[i];
+                        LuminanceSamplesFull.AddRange(components.Item2.SamplesY.Select(el => el < 0 ? (ushort)0x3FF : (ushort)el));
+                        ChrominanceRySamples.AddRange(components.Item2.SamplesRy.Select(el => el < 0 ? (byte)0xFF : (byte)el));
+                        ChrominanceBySamples.AddRange(components.Item2.SamplesBy.Select(el => el < 0 ? (byte)0xFF : (byte)el));
 
-                        vectorTable.Add(entry.Item1);
-                        vectorTable.Add(entry.Item2);
-                        vectorTable.Add(entry.Item3);
+                        for (int i = (vectorTableEntryCount / 2); i < vectorTableEntryCount; i++)
+                        {
+                            var entry = components.Item2.VectorTable[i];
+
+                            vectorTable.Add(entry.Item1);
+                            vectorTable.Add(entry.Item2);
+                            vectorTable.Add(entry.Item3);
+                        }
                     }
-                }
-                else
-                {
-                    for (int i = 0; i < 580; i++)
+                    else
                     {
-                        var entry = components.Item1.VectorTable[i];
+                        for (int i = 0; i < (vectorTableEntryCount / 2); i++)
+                        {
+                            var entry = components.Item1.VectorTable[i];
 
-                        vectorTable.Add(entry.Item1);
-                        vectorTable.Add(entry.Item2);
-                        vectorTable.Add(entry.Item3);
+                            vectorTable.Add(entry.Item1);
+                            vectorTable.Add(entry.Item2);
+                            vectorTable.Add(entry.Item3);
+                        }
                     }
                 }
 

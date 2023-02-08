@@ -179,17 +179,18 @@ namespace PhilipsPatternRom.Converter
                 {
                     // Recreate source from vector table. Not an exact science.
 
-                    DrawLine(bitmap, type, _vectorEntries[startLine + linesPerField + 1]);
+                    DrawLine(bitmap, type, _vectorEntries[245]);
                     DrawLine(bitmap, type, _vectorEntries[startLine + 0]);
 
-                    for (int i = 2; i < linesPerField - 1; i++)
+                    for (int i = 2; i < linesPerField - 2; i++)
                     {
-                        DrawLine(bitmap, type, _vectorEntries[startLine + i + linesPerField]);
+                        var altField = startLine + i + linesPerField - 1;
+                        DrawLine(bitmap, type, _vectorEntries[altField]);
                         DrawLine(bitmap, type, _vectorEntries[startLine + i]);
                     }
 
                     DrawLine(bitmap, type, _vectorEntries[startLine + linesPerField + 2]);
-                    DrawLine(bitmap, type, _vectorEntries[startLine + 1]);
+                    DrawLine(bitmap, type, _vectorEntries[1]);
                 }
             }
             else

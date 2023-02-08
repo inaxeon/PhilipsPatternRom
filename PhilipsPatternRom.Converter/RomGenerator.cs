@@ -11,8 +11,7 @@ namespace PhilipsPatternRom.Converter
     public class RomGenerator
     {
         private RomManager _romManager;
-
-        private const int _linesPerField = 290;
+        
         private const int _vectorTableLength = (0xD98 / 3 /* bytes per entry */);
         private const int _lineLength = 1024;
 
@@ -25,6 +24,7 @@ namespace PhilipsPatternRom.Converter
         private List<ushort> _bySamples;
 
         private List<Tuple<byte, byte, byte>> _sourceVectorEntries;
+        private int _linesPerField;
 
         private List<Tuple<ConvertedComponents, ConvertedComponents, int>> _convertedComponents;
 
@@ -40,10 +40,17 @@ namespace PhilipsPatternRom.Converter
         private void LoadSourceVectors()
         {
             _sourceVectorEntries = Utility.LoadVectors(_romManager, _romManager.Standard);
+            _linesPerField = _sourceVectorEntries.Count / 2;
+
+            if (_romManager.Standard == GeneratorStandard.PAL || _romManager.Standard == GeneratorStandard.PAL_M)
+                _linesPerField /= 2;
         }
 
         public void AddAntiPal(string directory)
         {
+            if (_romManager.Standard == GeneratorStandard.NTSC)
+                throw new Exception("Cannot add Anti-PAL pattern for NTSC");
+
             _invertNewSamples = true;
 
             LoadSamples(directory);
@@ -51,8 +58,8 @@ namespace PhilipsPatternRom.Converter
             var lastPattern = _convertedComponents.LastOrDefault();
             var initialOffset = lastPattern != null ? lastPattern.Item3 : _targetOffset;
 
-            var ap1 = ConvertPattern(0, 0, initialOffset);
-            var ap2 = ConvertPattern(580, ap1.NextLine, ap1.NextOffset);
+            var ap1 = ConvertPatternPal(0, 0, initialOffset);
+            var ap2 = ConvertPatternPal(580, ap1.NextLine, ap1.NextOffset);
 
             _convertedComponents.Add(new Tuple<ConvertedComponents, ConvertedComponents, int>(ap1, ap2, ap2.NextOffset));
         }
@@ -66,7 +73,20 @@ namespace PhilipsPatternRom.Converter
             var lastPattern = _convertedComponents.LastOrDefault();
             var initialOffset = lastPattern != null ? lastPattern.Item3 : _targetOffset;
 
-            var ap1 = ConvertPattern(0, 0, initialOffset);
+            ConvertedComponents ap1 = null;
+
+            switch (_romManager.Standard)
+            {
+                case GeneratorStandard.PAL:
+                case GeneratorStandard.PAL_M:
+                    ap1 = ConvertPatternPal(0, 0, initialOffset);
+                    break;
+                case GeneratorStandard.NTSC:
+                    ap1 = ConvertPatternNtsc(0, initialOffset);
+                    break;
+                default:
+                    throw new NotImplementedException();
+            }
 
             _convertedComponents.Add(new Tuple<ConvertedComponents, ConvertedComponents, int>(ap1, null, ap1.NextOffset));
         }
@@ -140,7 +160,7 @@ namespace PhilipsPatternRom.Converter
             }
         }
 
-        private ConvertedComponents ConvertPattern(int baseVector, int line, int offset)
+        private ConvertedComponents ConvertPatternPal(int baseVector, int line, int offset)
         {
             var ret = new ConvertedComponents
             {
@@ -194,6 +214,75 @@ namespace PhilipsPatternRom.Converter
             return ret;
         }
 
+        private ConvertedComponents ConvertPatternNtsc(int baseVector, int offset)
+        {
+            var ret = new ConvertedComponents
+            {
+                SamplesY = new List<int>(),
+                SamplesRy = new List<int>(),
+                SamplesBy = new List<int>(),
+                VectorTable = new Dictionary<int, Tuple<byte, byte, byte>>()
+            };
+
+            int i = 0;
+            int line = 0;
+            /*
+            DrawLine(bitmap, type, _vectorEntries[baseVector + _linesPerField + 1]);
+            DrawLine(bitmap, type, _vectorEntries[baseVector + 0]);
+
+            for (int i = 2; i < linesPerField - 1; i++)
+            {
+                DrawLine(bitmap, type, _vectorEntries[baseVector + i + _linesPerField]);
+                DrawLine(bitmap, type, _vectorEntries[baseVector + i]);
+            }
+
+            DrawLine(bitmap, type, _vectorEntries[baseVector + _linesPerField + 2]);
+            DrawLine(bitmap, type, _vectorEntries[baseVector + 1]);
+                    */
+
+            ConvertAllSamples(ret, 1, offset);
+            ret.VectorTable[0] = GetVectorForOffset(offset);
+            ret.VectorTable[486] = GetVectorForOffset(offset);
+            ret.VectorTable[487] = GetVectorForOffset(offset);
+            ret.VectorTable[488] = GetVectorForOffset(offset);
+            ret.VectorTable[489] = GetVectorForOffset(offset);
+            offset += _lineLength;
+
+            ConvertAllSamples(ret, 485, offset);
+            ret.VectorTable[1] = GetVectorForOffset(offset);
+            offset += _lineLength;
+
+            GenerateBlankLine(ret, offset);
+            ret.VectorTable[243] = GetVectorForOffset(offset);
+            ret.VectorTable[244] = GetVectorForOffset(offset);
+            offset += _lineLength;
+
+            line += 2;
+
+            for (i = 2; i < _linesPerField - 2; i++)
+            {
+                var alternateField = baseVector + i + _linesPerField - 1;
+
+                ConvertAllSamples(ret, line++, offset);
+                ret.VectorTable[alternateField] = GetVectorForOffset(offset);
+
+                offset += _lineLength;
+
+                ConvertAllSamples(ret, line++, offset);
+                ret.VectorTable[baseVector + i] = GetVectorForOffset(offset);
+                offset += _lineLength;
+            }
+
+            ConvertAllSamples(ret, 0, offset);
+            ret.VectorTable[245] = GetVectorForOffset(offset);
+            offset += _lineLength;
+
+            ret.NextOffset = offset;
+            ret.NextLine = line;
+
+            return ret;
+        }
+
         private void ConvertAllSamples(ConvertedComponents components, int line, int offset)
         {
             components.SamplesY.AddRange(BuildSamples(PatternType.Luma, line, offset));
@@ -201,15 +290,43 @@ namespace PhilipsPatternRom.Converter
             components.SamplesBy.AddRange(BuildSamples(PatternType.BminusY, line, offset));
         }
 
+        private void GenerateBlankLine(ConvertedComponents components, int offset)
+        {
+            components.SamplesY.AddRange(Enumerable.Repeat(724, 1024));
+            components.SamplesRy.AddRange(Enumerable.Repeat(128, 512));
+            components.SamplesBy.AddRange(Enumerable.Repeat(128, 512));
+        }
+
         private List<int> BuildSamples(PatternType type, int line, int offset)
         {
             var lineSamples = new List<int>();
-            var totalSize = 1024;
-            var newPatternStartOffset = type == PatternType.Luma ? 133 : 67;
-            var maxBackAndCentreSamples = 736;
-            var centreSize = 512;
-            var backPorchSize = 256;
+            int totalSize = 0;
+            int newPatternStartOffset = 0;
+            int maxBackAndCentreSamples = 0;
+            int centreSize = 0;
+            int backPorchSize = 0;
             var lineLength = _lineLength;
+
+            switch (_romManager.Standard)
+            {
+                case GeneratorStandard.PAL:
+                    totalSize = 1024;
+                    newPatternStartOffset = type == PatternType.Luma ? 133 : 67;
+                    maxBackAndCentreSamples = 736;
+                    centreSize = 512;
+                    backPorchSize = 256;
+                    break;
+                case GeneratorStandard.NTSC:
+                case GeneratorStandard.PAL_M:
+                    totalSize = 1024;
+                    newPatternStartOffset = type == PatternType.Luma ? 138 : 70;
+                    maxBackAndCentreSamples = 768;
+                    centreSize = 512;
+                    backPorchSize = 256;
+                    break;
+                default:
+                    throw new NotImplementedException();
+            }
 
             if (type != PatternType.Luma)
             {
@@ -347,7 +464,7 @@ namespace PhilipsPatternRom.Converter
             int sourceAdjusted = (source - newCentre);
             decimal adjusted = (decimal)sourceAdjusted * scaleFactor;
 
-            if (_invertNewSamples)
+            if ((_invertNewSamples && _romManager.Standard == GeneratorStandard.PAL) || (_romManager.Standard == GeneratorStandard.NTSC && type == PatternType.BminusY))
                 adjusted = -adjusted;
 
             adjusted += originalCentre;

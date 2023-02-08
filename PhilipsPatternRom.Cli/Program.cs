@@ -13,7 +13,9 @@ namespace PhilipsPatternRom.Cli
     class Program
     {
         // /Generator Pm5644g00 /InROMs "N:\Electronics\Analog TV\PM5644\PM5644G00" /InputPatternIndex 2 /OutputPatternIndex 0 /AddApPattern "C:\Dev\PTV\PT5230\PT8633\TPD\BILLEDDATA\Data fra PTV_Brandskab\G\PHIL16X9\TXT_M_AP" /AddPattern "C:\Dev\PTV\PT5230\PT8633\TPD\BILLEDDATA\FUBK4X3\U_ANTIPA" /OutROMs "N:\Electronics\Analog TV\PM5644\PM5644G00_Modified"
+        // /Generator Pm5644m00 /InROMs "N:\Electronics\Analog TV\PM5644\PM5644M00" /InputPatternIndex 2 /OutputPatternIndex 0 /AddPattern "C:\Dev\PTV\PT5230\PT8633\TPD\BILLEDDATA\Data fra PTV_Brandskab\M\PHIL16X9\M_TXT" /OutROMs "N:\Electronics\Analog TV\PM5644\PM5644M00_Modified"
         // /Generator Pm5644g00 /InROMs "N:\Electronics\Analog TV\PM5644\PM5644G00" /RenderPattern /InputPatternIndex 2 /InputPatternFrame 1
+        // /Generator Pm5644m00Extended /InROMs "N:\Electronics\Analog TV\PM5644\PM5644M00_Modified" /RenderPattern /InputPatternIndex 1 /InputPatternFrame 0
         // /Generator Pm5644g00 /InROMs "N:\Electronics\Analog TV\PM5644\PM5644G00_Modified" /RenderPattern /InputPatternIndex 0
         static void Main(string[] args)
         {
@@ -113,9 +115,14 @@ namespace PhilipsPatternRom.Cli
                             Console.Error.WriteLine("Invalid output directory");
                             return;
                         }
-                        if (antiPalPatternsToAdd.Count == 0 || antiPalPatternsToAdd.Any(el => !Directory.Exists(el)))
+                        if (antiPalPatternsToAdd.Count == 0 && regularPatternsToAdd.Count == 0)
                         {
-                            Console.Error.WriteLine("Invalid / missing pattern source directory");
+                            Console.Error.WriteLine("Missing pattern source directory");
+                            return;
+                        }
+                        if (antiPalPatternsToAdd.Any(el => !Directory.Exists(el)) || regularPatternsToAdd.Any(el => !Directory.Exists(el)))
+                        {
+                            Console.Error.WriteLine("Non existent pattern source directory");
                             return;
                         }
                         AddPatternsToRoms(type, inputDir, outputDir, inputPatternIndex, outputPatternIndex, antiPalPatternsToAdd, regularPatternsToAdd);
@@ -187,8 +194,8 @@ namespace PhilipsPatternRom.Cli
                 case Converter.Models.GeneratorStandard.NTSC:
                     cropX = 135;
                     cropY = 0;
-                    cropWidth = 714;
-                    cropHeight = matchSource ? 486 : 488;
+                    cropWidth = 715;
+                    cropHeight = matchSource ? 486 : 490;
                     rYrange = 59;
                     bYrange = 41;
                     invertRy = false;
@@ -199,7 +206,7 @@ namespace PhilipsPatternRom.Cli
                     cropX = 135;
                     cropY = 0;
                     cropWidth = 714;
-                    cropHeight = matchSource ? 486 : 488;
+                    cropHeight = matchSource ? 486 : 490;
                     rYrange = 59;
                     bYrange = 41;
                     invertRy = true;
