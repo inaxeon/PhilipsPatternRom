@@ -46,8 +46,10 @@
     <Compile Include="Models\ConvertedComponents.cs" />
     <Compile Include="Models\GeneratorStandard.cs" />
     <Compile Include="Models\GeneratorType.cs" />
+    <Compile Include="Models\InputPattern.cs" />
     <Compile Include="Models\PatternComponents.cs" />
     <Compile Include="Models\PatternData.cs" />
+    <Compile Include="Models\PatternFixes.cs" />
     <Compile Include="Models\PatternFragment.cs" />
     <Compile Include="Models\PatternSubType.cs" />
     <Compile Include="Models\PatternType.cs" />
