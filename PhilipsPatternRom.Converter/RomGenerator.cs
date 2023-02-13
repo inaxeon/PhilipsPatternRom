@@ -164,164 +164,7 @@ namespace PhilipsPatternRom.Converter
             for (int i = 0; i < byCopy.Count; i += 2)
                 _bySamples.Add((ushort)((byCopy[i] + byCopy[i + 1]) / 2));
         }
-
-        private void ApplyPatternFixes(PatternFixes fixes)
-        {
-            if ((fixes & PatternFixes.FixCircle16x9Clock) == PatternFixes.FixCircle16x9Clock)
-            {
-                // Samples for centre without clock cut-out. Extracted from the GREY10 version of the pattern.
-                ushort[] centreWithClock = { 64, 97, 495, 902, 825, 358, 65, 64, 64, 64, 64, 64,
-                    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
-                    134, 575, 927, 766, 286, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
-                    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 184, 652, 939, 698, 220,
-                    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
-                    64, 64, 64, 64, 64, 64, 244, 725, 937, 624, 164, 64, 64, 64, 64, 64, 64,
-                    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
-                    312, 789, 919, 546, 119, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
-                    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 68, 387, 844, 888, 466, 87,
-                    64, 64, 64, 64, 64, 64, 64, 64, 64, 201, 675, 940, 675, 201, 64, 64, 64,
-                    64, 64, 64, 64, 64, 64, 87, 466, 888, 844, 387, 68, 64, 64, 64, 64, 64,
-                    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
-                    119, 545, 919, 789, 312, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
-                    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 164, 624, 937, 725, 244,
-                    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
-                    64, 64, 64, 64, 64, 64, 220, 698, 939, 652, 184, 64, 64, 64, 64, 64, 64,
-                    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
-                    286, 766, 927, 575, 134, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
-                    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 65, 358, 825, 902, 495, 97, 64 };
-
-                for (int line = 268; line < 287; line++)
-                {
-                    for (int i = 0; i < centreWithClock.Length; i++)
-                        _ySamples[(line * _lineLength) + 340 + i] = centreWithClock[i];
-                }
-
-                // Most central two lines without clock cut-out
-                for (int line = 287; line < 289; line++)
-                {
-                    for (int i = 0; i < centreWithClock.Length; i++)
-                        _ySamples[(line * _lineLength) + 340 + i] = 940; // Solid white
-                }
-
-                for (int line = 289; line < 308; line++)
-                {
-                    for (int i = 0; i < centreWithClock.Length; i++)
-                        _ySamples[(line * _lineLength) + 340 + i] = centreWithClock[i];
-                }
-            }
-
-            if ((fixes & PatternFixes.FixCircle16x9Ap) == PatternFixes.FixCircle16x9Ap)
-            {
-                // The PT5300 patterns use a compromise anti-PAL arrangement where the phase
-                // is swapped on each alternating frame, rather than each alternating field
-                // which doesn't upset digital transmissions but roughly does the same thing
-                // for analogue. But it's just not as good as true analogue anti-PAL so
-                // this fixes it up by re-arrangeing the samples accordingly. The result
-                // is equivalent to the G/924's pattern.
-
-                var totalLines = _rySamples.Count / _lineLength / 2;
-                var originalLineToPreserve = 202;
-                var stripeLength = 36;
-                var stripeStartRy = 168;
-                var stripeStartBy = 802;
-                ushort zeroValue = 512;
-
-                var originalRyStripePlus = _rySamples.Skip((originalLineToPreserve * _lineLength) + stripeStartRy).Take(stripeLength).ToList();
-                var originalRyStripeMinus = _rySamples.Skip(((totalLines + originalLineToPreserve) * _lineLength) + stripeStartRy).Take(stripeLength).ToList();
-
-                var originalByStripePlus = _bySamples.Skip((originalLineToPreserve * _lineLength) + stripeStartBy).Take(stripeLength).ToList();
-                var originalByStripeMinus = _bySamples.Skip(((totalLines + originalLineToPreserve) * _lineLength) + stripeStartBy).Take(stripeLength).ToList();
-
-                // Odd field
-                PatchAntiPal(_rySamples, 0, stripeStartRy, originalRyStripePlus, originalRyStripeMinus);
-                PatchAntiPal(_bySamples, 0, stripeStartBy, originalByStripePlus, originalByStripeMinus);
-                // Even field
-                PatchAntiPal(_rySamples, 576, stripeStartRy, originalRyStripeMinus, originalRyStripePlus);
-                PatchAntiPal(_bySamples, 576, stripeStartBy, originalByStripeMinus, originalByStripePlus);
-            }
-        }
-
-        private void PatchAntiPal(List<ushort> set, int startLine, int stripeStart, List<ushort> originalSamplesPlus, List<ushort> originalSamplesMinus)
-        {
-            var totalLines = set.Count / _lineLength / 2;
-            var originalLineToPreserve = 202 + startLine;
-            var stripeLength = 36;
-            ushort zeroValue = 512;
-
-            // Clear existing AP
-            foreach (var line in new[] {
-                    202, 203, 204,
-                    207, 208,
-                    211, 212,
-                    215, 216,
-                    219, 220,
-                    223,
-                    227, 228,
-                    231, 232,
-                    235, 236,
-                    239, 240,
-                    243, 244,
-                    247, 248,
-                    251, 252,
-                    255, 256,
-                    259, 260,
-                    263, 264
-                })
-            {
-                for (int i = 0; i < stripeLength; i++)
-                    set[((startLine + line) * _lineLength) + stripeStart + i] = zeroValue;
-            }
-
-            // Re-add plus stripes
-            foreach (var line in new[] {
-                    204,
-                    207, 208,
-                    211, 212,
-                    215, 216,
-                    219, 220,
-                    223,
-                    227, 228,
-                    231, 232,
-                    235, 236,
-                    239, 240,
-                    243, 244,
-                    247, 248,
-                    251, 252,
-                    255, 256,
-                    259, 260,
-                    263, 264
-                })
-            {
-                for (int i = 0; i < stripeLength; i++)
-                    set[((startLine + line) * _lineLength) + stripeStart + i] = originalSamplesPlus[i];
-            }
-
-            // Re-add minus stripes
-            foreach (var line in new[] {
-                    205, 206,
-                    209, 210,
-                    213, 214,
-                    217, 218,
-                    221, 222,
-                    226,
-                    229, 230,
-                    233, 234,
-                    237, 238,
-                    241, 242,
-                    245, 246,
-                    249, 250,
-                    253, 254,
-                    257, 258,
-                    261, 262,
-                    265
-                })
-            {
-                for (int i = 0; i < stripeLength; i++)
-                    set[((startLine + line) * _lineLength) + stripeStart + i] = originalSamplesMinus[i];
-            }
-        }
-
-
+        
         private ConvertedComponents ConvertPatternPal(int baseVector, int line, int offset)
         {
             var ret = new ConvertedComponents
@@ -641,6 +484,201 @@ namespace PhilipsPatternRom.Converter
                 sequence |= 0x08;
 
             return new Tuple<byte, byte, byte>(sequence, msa, msa);
+        }
+
+        private void ApplyPatternFixes(PatternFixes fixes)
+        {
+            if ((fixes & PatternFixes.FixCircle16x9Clock) == PatternFixes.FixCircle16x9Clock)
+            {
+                FixCircle16x9Clock();
+            }
+
+            if ((fixes & PatternFixes.FixCircle16x9Ap) == PatternFixes.FixCircle16x9Ap)
+            {
+                FixCircle16x9Ap();
+            }
+
+            if ((fixes & PatternFixes.FixFubk16x9Centre) == PatternFixes.FixFubk16x9Centre)
+            {
+                FixFubk16x9Centre();
+            }
+        }
+
+        private void FixCircle16x9Clock()
+        {
+            // Samples for centre without clock cut-out. Extracted from the GREY10 version of the pattern.
+            ushort[] centreWithClock = { 64, 97, 495, 902, 825, 358, 65, 64, 64, 64, 64, 64,
+                    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+                    134, 575, 927, 766, 286, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+                    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 184, 652, 939, 698, 220,
+                    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+                    64, 64, 64, 64, 64, 64, 244, 725, 937, 624, 164, 64, 64, 64, 64, 64, 64,
+                    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+                    312, 789, 919, 546, 119, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+                    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 68, 387, 844, 888, 466, 87,
+                    64, 64, 64, 64, 64, 64, 64, 64, 64, 201, 675, 940, 675, 201, 64, 64, 64,
+                    64, 64, 64, 64, 64, 64, 87, 466, 888, 844, 387, 68, 64, 64, 64, 64, 64,
+                    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+                    119, 545, 919, 789, 312, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+                    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 164, 624, 937, 725, 244,
+                    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+                    64, 64, 64, 64, 64, 64, 220, 698, 939, 652, 184, 64, 64, 64, 64, 64, 64,
+                    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+                    286, 766, 927, 575, 134, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+                    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 65, 358, 825, 902, 495, 97, 64 };
+
+            for (int line = 268; line < 287; line++)
+            {
+                for (int i = 0; i < centreWithClock.Length; i++)
+                    _ySamples[(line * _lineLength) + 340 + i] = centreWithClock[i];
+            }
+
+            // Most central two lines without clock cut-out
+            for (int line = 287; line < 289; line++)
+            {
+                for (int i = 0; i < centreWithClock.Length; i++)
+                    _ySamples[(line * _lineLength) + 340 + i] = 940; // Solid white
+            }
+
+            for (int line = 289; line < 308; line++)
+            {
+                for (int i = 0; i < centreWithClock.Length; i++)
+                    _ySamples[(line * _lineLength) + 340 + i] = centreWithClock[i];
+            }
+        }
+
+        private void FixCircle16x9Ap()
+        {
+            // The PT5300 patterns use a compromise anti-PAL arrangement where the phase
+            // is swapped on each alternating frame, rather than each alternating field
+            // which doesn't upset digital transmissions but roughly does the same thing
+            // for analogue. But it's just not as good as true analogue anti-PAL so
+            // this fixes it up by re-arranging the samples accordingly. The result
+            // is equivalent to the G/924's pattern.
+
+            var totalLines = _rySamples.Count / _lineLength / 2;
+            var originalLineToPreserve = 202;
+            var stripeLength = 36;
+            var stripeStartRy = 168;
+            var stripeStartBy = 802;
+            ushort zeroValue = 512;
+
+            var originalRyStripePlus = _rySamples.Skip((originalLineToPreserve * _lineLength) + stripeStartRy).Take(stripeLength).ToList();
+            var originalRyStripeMinus = _rySamples.Skip(((totalLines + originalLineToPreserve) * _lineLength) + stripeStartRy).Take(stripeLength).ToList();
+
+            var originalByStripePlus = _bySamples.Skip((originalLineToPreserve * _lineLength) + stripeStartBy).Take(stripeLength).ToList();
+            var originalByStripeMinus = _bySamples.Skip(((totalLines + originalLineToPreserve) * _lineLength) + stripeStartBy).Take(stripeLength).ToList();
+
+            // Odd field
+            PatchAntiPal(_rySamples, 0, stripeStartRy, originalRyStripePlus, originalRyStripeMinus);
+            PatchAntiPal(_bySamples, 0, stripeStartBy, originalByStripePlus, originalByStripeMinus);
+            // Even field
+            PatchAntiPal(_rySamples, 576, stripeStartRy, originalRyStripeMinus, originalRyStripePlus);
+            PatchAntiPal(_bySamples, 576, stripeStartBy, originalByStripeMinus, originalByStripePlus);
+        }
+
+        private void PatchAntiPal(List<ushort> set, int startLine, int stripeStart, List<ushort> originalSamplesPlus, List<ushort> originalSamplesMinus)
+        {
+            var totalLines = set.Count / _lineLength / 2;
+            var originalLineToPreserve = 202 + startLine;
+            var stripeLength = 36;
+            ushort zeroValue = 512;
+
+            // Clear existing AP
+            foreach (var line in new[] {
+                    202, 203, 204,
+                    207, 208,
+                    211, 212,
+                    215, 216,
+                    219, 220,
+                    223,
+                    227, 228,
+                    231, 232,
+                    235, 236,
+                    239, 240,
+                    243, 244,
+                    247, 248,
+                    251, 252,
+                    255, 256,
+                    259, 260,
+                    263, 264
+                })
+            {
+                for (int i = 0; i < stripeLength; i++)
+                    set[((startLine + line) * _lineLength) + stripeStart + i] = zeroValue;
+            }
+
+            // Re-add plus stripes
+            foreach (var line in new[] {
+                    204,
+                    207, 208,
+                    211, 212,
+                    215, 216,
+                    219, 220,
+                    223,
+                    227, 228,
+                    231, 232,
+                    235, 236,
+                    239, 240,
+                    243, 244,
+                    247, 248,
+                    251, 252,
+                    255, 256,
+                    259, 260,
+                    263, 264
+                })
+            {
+                for (int i = 0; i < stripeLength; i++)
+                    set[((startLine + line) * _lineLength) + stripeStart + i] = originalSamplesPlus[i];
+            }
+
+            // Re-add minus stripes
+            foreach (var line in new[] {
+                    205, 206,
+                    209, 210,
+                    213, 214,
+                    217, 218,
+                    221, 222,
+                    226,
+                    229, 230,
+                    233, 234,
+                    237, 238,
+                    241, 242,
+                    245, 246,
+                    249, 250,
+                    253, 254,
+                    257, 258,
+                    261, 262,
+                    265
+                })
+            {
+                for (int i = 0; i < stripeLength; i++)
+                    set[((startLine + line) * _lineLength) + stripeStart + i] = originalSamplesMinus[i];
+            }
+        }
+
+        private void FixFubk16x9Centre()
+        {
+            var originalLineToPreserve = 288;
+            var stripeLength = 9;
+            var stripeStart = 498;
+
+            var originalStripe = _ySamples.Skip((originalLineToPreserve * _lineLength) + stripeStart).Take(stripeLength).ToList();
+
+            foreach (var line in new[] { 288, 289, 290, 324, 325, 326 })
+            {
+                for (int i = 0; i < 8; i++)
+                {
+                    _ySamples[((line) * _lineLength) + i + 490] = 64;
+                    _ySamples[((line) * _lineLength) + i + 515] = 64;
+                }
+            }
+
+            for (int line = 288; line < 327; line++)
+            {
+                for (int i = 0; i < stripeLength; i++)
+                    _ySamples[(line * _lineLength) + stripeStart + i] = originalStripe[i];
+            }
         }
     }
 }
