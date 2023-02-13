@@ -11,6 +11,7 @@ namespace PhilipsPatternRom.Converter
     public class RomGenerator
     {
         private RomManager _romManager;
+        private GeneratorType _outputType;
         
         private const int _lineLength = 1024;
 
@@ -96,16 +97,17 @@ namespace PhilipsPatternRom.Converter
 
         public void Save(string directory, int outputPatternIndex)
         {
-            _romManager.RomSize = 0x80000;
+            _romManager.SetFilenamesAndSize(_outputType);
             _romManager.AppendComponents(_convertedComponents, outputPatternIndex);
             _romManager.SaveSet(directory);
         }
 
-        public void Init(GeneratorType type, string directory, int patternIndex)
+        public void Init(GeneratorType type, GeneratorType outputType, string directory, int patternIndex)
         {
             _convertedComponents = new List<Tuple<ConvertedComponents, ConvertedComponents, int>>();
 
             _romManager.OpenSet(type, directory, patternIndex);
+            _outputType = outputType;
 
             _targetOffset = _romManager.RomSize * 4; // Starting offset for new patterns
 

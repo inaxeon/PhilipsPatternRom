@@ -44,6 +44,7 @@
   <ItemGroup>
     <Compile Include="Extensions\ListExtensions.cs" />
     <Compile Include="Models\ConvertedComponents.cs" />
+    <Compile Include="Models\Generator.cs" />
     <Compile Include="Models\GeneratorStandard.cs" />
     <Compile Include="Models\GeneratorType.cs" />
     <Compile Include="Models\InputPattern.cs" />

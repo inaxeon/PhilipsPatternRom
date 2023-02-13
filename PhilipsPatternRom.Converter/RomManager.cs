@@ -19,7 +19,9 @@ namespace PhilipsPatternRom.Converter
 
         public GeneratorStandard Standard { get; private set; }
 
-        public int RomSize { get; set; }
+        private int _romSize { get; set; }
+
+        public int RomSize {  get { return _romSize; } }
 
         private List<RomPart> _set;
         private int _vectorTableStart;
@@ -34,105 +36,158 @@ namespace PhilipsPatternRom.Converter
             ChrominanceBySamples = new List<byte>();
         }
 
-        private static List<RomPart> Pm5644g00Parts = new List<RomPart>
+        private static Generator[] _generators =
         {
-            new RomPart(RomType.Luminance0,     "EPROM_4008_102_56191_CSUM_9A6A.BIN", 0, 0x10000),
-            new RomPart(RomType.Luminance1,     "EPROM_4008_102_56201_CSUM_4E67.BIN", 0, 0x10000),
-            new RomPart(RomType.Luminance2,     "EPROM_4008_102_56211_CSUM_3172.BIN", 0, 0x10000),
-            new RomPart(RomType.Luminance3,     "EPROM_4008_102_56221_CSUM_7F95.BIN", 0, 0x10000),
-            new RomPart(RomType.LuminanceLSB,   "EPROM_4008_102_56231_CSUM_78C4.BIN", 0, 0x10000),
-            new RomPart(RomType.ChrominanceRY0, "EPROM_4008_102_56241_CSUM_F0DF.BIN", 0, 0x10000),
-            new RomPart(RomType.ChrominanceRY1, "EPROM_4008_102_56251_CSUM_F397.BIN", 0, 0x10000),
-            new RomPart(RomType.ChrominanceBY0, "EPROM_4008_102_56261_CSUM_2DA9.BIN", 0, 0x10000),
-            new RomPart(RomType.ChrominanceBY1, "EPROM_4008_102_56271_CSUM_2E0F.BIN", 0, 0x10000),
-            //new RomPart(RomType.VectorTable,    "EPROM_4008_102_59371_CSUM_A100.BIN", 0x52F6, 0xD98), // Clock full
-            //new RomPart(RomType.VectorTable,    "EPROM_4008_102_59371_CSUM_A100.BIN", 0x608E, 0xD98), // Clock half
-            //new RomPart(RomType.VectorTable,    "EPROM_4008_102_59371_CSUM_A100.BIN", 0x6E26, 0xD98), // Clock off
-            new RomPart(RomType.CPU,    "EPROM_4008_102_59371_CSUM_A100.BIN", 0, 0x10000), // Clock off
+            new Generator
+            {
+                Type = GeneratorType.Pm5644g00,
+                Standard = GeneratorStandard.PAL,
+                VectorTableStart = 0x52F6,
+                VectorTableLength = 0xD98,
+                RomParts = new List<RomPart>
+                {
+                    new RomPart(RomType.Luminance0,     "EPROM_4008_102_56191_CSUM_9A6A.BIN", 0, 0x10000),
+                    new RomPart(RomType.Luminance1,     "EPROM_4008_102_56201_CSUM_4E67.BIN", 0, 0x10000),
+                    new RomPart(RomType.Luminance2,     "EPROM_4008_102_56211_CSUM_3172.BIN", 0, 0x10000),
+                    new RomPart(RomType.Luminance3,     "EPROM_4008_102_56221_CSUM_7F95.BIN", 0, 0x10000),
+                    new RomPart(RomType.LuminanceLSB,   "EPROM_4008_102_56231_CSUM_78C4.BIN", 0, 0x10000),
+                    new RomPart(RomType.ChrominanceRY0, "EPROM_4008_102_56241_CSUM_F0DF.BIN", 0, 0x10000),
+                    new RomPart(RomType.ChrominanceRY1, "EPROM_4008_102_56251_CSUM_F397.BIN", 0, 0x10000),
+                    new RomPart(RomType.ChrominanceBY0, "EPROM_4008_102_56261_CSUM_2DA9.BIN", 0, 0x10000),
+                    new RomPart(RomType.ChrominanceBY1, "EPROM_4008_102_56271_CSUM_2E0F.BIN", 0, 0x10000),
+                    //new RomPart(RomType.VectorTable,    "EPROM_4008_102_59371_CSUM_A100.BIN", 0x52F6, 0xD98), // Clock full
+                    //new RomPart(RomType.VectorTable,    "EPROM_4008_102_59371_CSUM_A100.BIN", 0x608E, 0xD98), // Clock half
+                    //new RomPart(RomType.VectorTable,    "EPROM_4008_102_59371_CSUM_A100.BIN", 0x6E26, 0xD98), // Clock off
+                    new RomPart(RomType.CPU,    "EPROM_4008_102_59371_CSUM_A100.BIN", 0, 0x10000), // Clock off
+                }
+            },
+            new Generator
+            {
+                Type = GeneratorType.Pm5644g00Extended,
+                Standard = GeneratorStandard.PAL,
+                VectorTableStart = 0x52F6,
+                VectorTableLength = 0xD98,
+                RomParts = new List<RomPart>
+                {
+                    new RomPart(RomType.Luminance0,     "EPROM_MP_V101_CSUM_[A-F0-9]+\\.BIN", 0, 0x80000),
+                    new RomPart(RomType.Luminance1,     "EPROM_MP_V103_CSUM_[A-F0-9]+\\.BIN", 0, 0x80000),
+                    new RomPart(RomType.Luminance2,     "EPROM_MP_V105_CSUM_[A-F0-9]+\\.BIN", 0, 0x80000),
+                    new RomPart(RomType.Luminance3,     "EPROM_MP_V107_CSUM_[A-F0-9]+\\.BIN", 0, 0x80000),
+                    new RomPart(RomType.LuminanceLSB,   "EPROM_MP_V109_CSUM_[A-F0-9]+\\.BIN", 0, 0x80000),
+                    new RomPart(RomType.ChrominanceRY0, "EPROM_MP_V201_CSUM_[A-F0-9]+\\.BIN", 0, 0x80000),
+                    new RomPart(RomType.ChrominanceRY1, "EPROM_MP_V203_CSUM_[A-F0-9]+\\.BIN", 0, 0x80000),
+                    new RomPart(RomType.ChrominanceBY0, "EPROM_MP_V301_CSUM_[A-F0-9]+\\.BIN", 0, 0x80000),
+                    new RomPart(RomType.ChrominanceBY1, "EPROM_MP_V303_CSUM_[A-F0-9]+\\.BIN", 0, 0x80000),
+                    new RomPart(RomType.CPU,            "EPROM_MP_V12_CSUM_[A-F0-9]+\\.BIN", 0, 0x10000),
+                }
+            },
+            new Generator
+            {
+                Type = GeneratorType.Pm5644g913,
+                Standard = GeneratorStandard.PAL,
+                VectorTableStart = 0x50C8,
+                VectorTableLength = 0x916,
+                RomParts = new List<RomPart>
+                {
+                    new RomPart(RomType.Luminance0,     "EPROM_4008_102_58802_CSUM_A64A.BIN", 0, 0x80000),
+                    new RomPart(RomType.Luminance1,     "EPROM_4008_102_58812_CSUM_61E5.BIN", 0, 0x80000),
+                    new RomPart(RomType.Luminance2,     "EPROM_4008_102_58822_CSUM_3FCA.BIN", 0, 0x80000),
+                    new RomPart(RomType.Luminance3,     "EPROM_4008_102_58832_CSUM_757D.BIN", 0, 0x80000),
+                    new RomPart(RomType.LuminanceLSB,   "EPROM_4008_102_58842_CSUM_E882.BIN", 0, 0x80000),
+                    new RomPart(RomType.ChrominanceRY0, "EPROM_4008_102_58852_CSUM_81F9.BIN", 0, 0x80000),
+                    new RomPart(RomType.ChrominanceRY1, "EPROM_4008_102_58862_CSUM_81F9.BIN", 0, 0x80000),
+                    new RomPart(RomType.ChrominanceBY0, "EPROM_4008_102_58872_CSUM_B4C3.BIN", 0, 0x80000),
+                    new RomPart(RomType.ChrominanceBY1, "EPROM_4008_102_58882_CSUM_B4C3.BIN", 0, 0x80000),
+                    new RomPart(RomType.CPU,    "EPROM_4008_102_58761_CSUM_1800.BIN", 0, 0x10000),
+                }
+            },
+            new Generator
+            {
+                Type = GeneratorType.Pm5644g924,
+                Standard = GeneratorStandard.PAL_16_9,
+                VectorTableStart = 0x6D1D,
+                VectorTableLength = 0x918,
+                RomParts = new List<RomPart>
+                {
+                    new RomPart(RomType.Luminance0,     "EPROM_4008_002_00551_CSUM_9F93.BIN", 0, 0x80000),
+                    new RomPart(RomType.Luminance1,     "EPROM_4008_002_00561_CSUM_3998.BIN", 0, 0x80000),
+                    new RomPart(RomType.Luminance2,     "EPROM_4008_002_00571_CSUM_5608.BIN", 0, 0x80000),
+                    new RomPart(RomType.Luminance3,     "EPROM_4008_002_00581_CSUM_739C.BIN", 0, 0x80000),
+                    new RomPart(RomType.LuminanceLSB,   "EPROM_4008_002_00591_CSUM_1C84.BIN", 0, 0x80000),
+                    new RomPart(RomType.ChrominanceRY0, "EPROM_4008_002_00601_CSUM_F478.BIN", 0, 0x80000),
+                    new RomPart(RomType.ChrominanceRY1, "EPROM_4008_002_00611_CSUM_F167.BIN", 0, 0x80000),
+                    new RomPart(RomType.ChrominanceBY0, "EPROM_4008_002_00621_CSUM_06E1.BIN", 0, 0x80000),
+                    new RomPart(RomType.ChrominanceBY1, "EPROM_4008_002_00631_CSUM_FFB8.BIN", 0, 0x80000),
+                    new RomPart(RomType.CPU,    "EPROM_4008_002_00541_CSUM_B700.BIN", 0, 0x10000),
+                }
+            },
+            new Generator
+            {
+                Type = GeneratorType.Pm5644m00,
+                Standard = GeneratorStandard.NTSC,
+                VectorTableStart = 0x5314,
+                VectorTableLength = 0x5BE,
+                RomParts = new List<RomPart>
+                {
+                    new RomPart(RomType.Luminance0,     "EPROM_4008_102_56741_CSUM_0D4A.BIN", 0, 0x10000),
+                    new RomPart(RomType.Luminance1,     "EPROM_4008_102_56751_CSUM_F7B6.BIN", 0, 0x10000),
+                    new RomPart(RomType.Luminance2,     "EPROM_4008_102_56761_CSUM_03DF.BIN", 0, 0x10000),
+                    new RomPart(RomType.Luminance3,     "EPROM_4008_102_56771_CSUM_1A71.BIN", 0, 0x10000),
+                    new RomPart(RomType.LuminanceLSB,   "EPROM_4008_102_56781_CSUM_8E52.BIN", 0, 0x10000),
+                    new RomPart(RomType.ChrominanceRY0, "EPROM_4008_102_56791_CSUM_C1EA.BIN", 0, 0x10000),
+                    new RomPart(RomType.ChrominanceRY1, "EPROM_4008_102_56801_CSUM_C1D0.BIN", 0, 0x10000),
+                    new RomPart(RomType.ChrominanceBY0, "EPROM_4008_102_56811_CSUM_B3AC.BIN", 0, 0x10000),
+                    new RomPart(RomType.ChrominanceBY1, "EPROM_4008_102_56821_CSUM_B3EC.BIN", 0, 0x10000),
+                    new RomPart(RomType.CPU,    "EPROM_4008_102_59401_CSUM_7300.BIN", 0, 0x10000),
+                }
+            },
+            new Generator
+            {
+                Type = GeneratorType.Pm5644m00Extended,
+                Standard = GeneratorStandard.NTSC,
+                VectorTableStart = 0x5314,
+                VectorTableLength = 0x5BE,
+                RomParts = new List<RomPart>
+                {
+                    new RomPart(RomType.Luminance0,     "EPROM_4008_102_56741_CSUM_0D4A.BIN", 0, 0x80000),
+                    new RomPart(RomType.Luminance1,     "EPROM_4008_102_56751_CSUM_F7B6.BIN", 0, 0x80000),
+                    new RomPart(RomType.Luminance2,     "EPROM_4008_102_56761_CSUM_03DF.BIN", 0, 0x80000),
+                    new RomPart(RomType.Luminance3,     "EPROM_4008_102_56771_CSUM_1A71.BIN", 0, 0x80000),
+                    new RomPart(RomType.LuminanceLSB,   "EPROM_4008_102_56781_CSUM_8E52.BIN", 0, 0x80000),
+                    new RomPart(RomType.ChrominanceRY0, "EPROM_4008_102_56791_CSUM_C1EA.BIN", 0, 0x80000),
+                    new RomPart(RomType.ChrominanceRY1, "EPROM_4008_102_56801_CSUM_C1D0.BIN", 0, 0x80000),
+                    new RomPart(RomType.ChrominanceBY0, "EPROM_4008_102_56811_CSUM_B3AC.BIN", 0, 0x80000),
+                    new RomPart(RomType.ChrominanceBY1, "EPROM_4008_102_56821_CSUM_B3EC.BIN", 0, 0x80000),
+                    new RomPart(RomType.CPU,    "EPROM_4008_102_59401_CSUM_7300.BIN", 0, 0x10000),
+                }
+            },
+            new Generator
+            {
+                Type = GeneratorType.Pm5644p00,
+                Standard = GeneratorStandard.PAL_M,
+                VectorTableStart = 0x5314,
+                VectorTableLength = 0x5BE,
+                RomParts = new List<RomPart>
+                {
+                    new RomPart(RomType.Luminance0,     "EPROM_4008_102_57161_CSUM_E601.BIN", 0, 0x10000),
+                    new RomPart(RomType.Luminance1,     "EPROM_4008_102_57171_CSUM_D3B6.BIN", 0, 0x10000),
+                    new RomPart(RomType.Luminance2,     "EPROM_4008_102_57181_CSUM_DE42.BIN", 0, 0x10000),
+                    new RomPart(RomType.Luminance3,     "EPROM_4008_102_57191_CSUM_F178.BIN", 0, 0x10000),
+                    new RomPart(RomType.LuminanceLSB,   "EPROM_4008_102_57201_CSUM_E138.BIN", 0, 0x10000),
+                    new RomPart(RomType.ChrominanceRY0, "EPROM_4008_102_56851_CSUM_0379.BIN", 0, 0x10000),
+                    new RomPart(RomType.ChrominanceRY1, "EPROM_4008_102_56861_CSUM_0393.BIN", 0, 0x10000),
+                    new RomPart(RomType.ChrominanceBY0, "EPROM_4008_102_56831_CSUM_6C99.BIN", 0, 0x10000),
+                    new RomPart(RomType.ChrominanceBY1, "EPROM_4008_102_56841_CSUM_6CF9.BIN", 0, 0x10000),
+                    new RomPart(RomType.CPU,    "EPROM_4008_102_59391_CSUM_0D00.BIN", 0, 0x10000),
+                }
+            },
         };
 
-        private static List<RomPart> Pm5644g00ExtendedParts = new List<RomPart>
-        {
-            new RomPart(RomType.Luminance0,     "EPROM_4008_102_56191_CSUM_9A6A.BIN", 0, 0x80000),
-            new RomPart(RomType.Luminance1,     "EPROM_4008_102_56201_CSUM_4E67.BIN", 0, 0x80000),
-            new RomPart(RomType.Luminance2,     "EPROM_4008_102_56211_CSUM_3172.BIN", 0, 0x80000),
-            new RomPart(RomType.Luminance3,     "EPROM_4008_102_56221_CSUM_7F95.BIN", 0, 0x80000),
-            new RomPart(RomType.LuminanceLSB,   "EPROM_4008_102_56231_CSUM_78C4.BIN", 0, 0x80000),
-            new RomPart(RomType.ChrominanceRY0, "EPROM_4008_102_56241_CSUM_F0DF.BIN", 0, 0x80000),
-            new RomPart(RomType.ChrominanceRY1, "EPROM_4008_102_56251_CSUM_F397.BIN", 0, 0x80000),
-            new RomPart(RomType.ChrominanceBY0, "EPROM_4008_102_56261_CSUM_2DA9.BIN", 0, 0x80000),
-            new RomPart(RomType.ChrominanceBY1, "EPROM_4008_102_56271_CSUM_2E0F.BIN", 0, 0x80000),
-            new RomPart(RomType.CPU,            "EPROM_4008_102_59371_CSUM_A100.BIN", 0, 0x10000),
-        };
 
-        private static List<RomPart> Pm5644g913Parts = new List<RomPart>
-        {
-            new RomPart(RomType.Luminance0,     "EPROM_4008_102_58802_CSUM_A64A.BIN", 0, 0x80000),
-            new RomPart(RomType.Luminance1,     "EPROM_4008_102_58812_CSUM_61E5.BIN", 0, 0x80000),
-            new RomPart(RomType.Luminance2,     "EPROM_4008_102_58822_CSUM_3FCA.BIN", 0, 0x80000),
-            new RomPart(RomType.Luminance3,     "EPROM_4008_102_58832_CSUM_757D.BIN", 0, 0x80000),
-            new RomPart(RomType.LuminanceLSB,   "EPROM_4008_102_58842_CSUM_E882.BIN", 0, 0x80000),
-            new RomPart(RomType.ChrominanceRY0, "EPROM_4008_102_58852_CSUM_81F9.BIN", 0, 0x80000),
-            new RomPart(RomType.ChrominanceRY1, "EPROM_4008_102_58862_CSUM_81F9.BIN", 0, 0x80000),
-            new RomPart(RomType.ChrominanceBY0, "EPROM_4008_102_58872_CSUM_B4C3.BIN", 0, 0x80000),
-            new RomPart(RomType.ChrominanceBY1, "EPROM_4008_102_58882_CSUM_B4C3.BIN", 0, 0x80000),
-            new RomPart(RomType.CPU,    "EPROM_4008_102_58761_CSUM_1800.BIN", 0, 0x10000),
-        };
-
-        private static List<RomPart> Pm5644g924Parts = new List<RomPart>
-        {
-            new RomPart(RomType.Luminance0,     "EPROM_4008_002_00551_CSUM_9F93.BIN", 0, 0x80000),
-            new RomPart(RomType.Luminance1,     "EPROM_4008_002_00561_CSUM_3998.BIN", 0, 0x80000),
-            new RomPart(RomType.Luminance2,     "EPROM_4008_002_00571_CSUM_5608.BIN", 0, 0x80000),
-            new RomPart(RomType.Luminance3,     "EPROM_4008_002_00581_CSUM_739C.BIN", 0, 0x80000),
-            new RomPart(RomType.LuminanceLSB,   "EPROM_4008_002_00591_CSUM_1C84.BIN", 0, 0x80000),
-            new RomPart(RomType.ChrominanceRY0, "EPROM_4008_002_00601_CSUM_F478.BIN", 0, 0x80000),
-            new RomPart(RomType.ChrominanceRY1, "EPROM_4008_002_00611_CSUM_F167.BIN", 0, 0x80000),
-            new RomPart(RomType.ChrominanceBY0, "EPROM_4008_002_00621_CSUM_06E1.BIN", 0, 0x80000),
-            new RomPart(RomType.ChrominanceBY1, "EPROM_4008_002_00631_CSUM_FFB8.BIN", 0, 0x80000),
-            new RomPart(RomType.CPU,    "EPROM_4008_002_00541_CSUM_B700.BIN", 0, 0x10000),
-        };
-
-        private static List<RomPart> Pm5644m00Parts = new List<RomPart>
-        {
-            new RomPart(RomType.Luminance0,     "EPROM_4008_102_56741_CSUM_0D4A.BIN", 0, 0x10000),
-            new RomPart(RomType.Luminance1,     "EPROM_4008_102_56751_CSUM_F7B6.BIN", 0, 0x10000),
-            new RomPart(RomType.Luminance2,     "EPROM_4008_102_56761_CSUM_03DF.BIN", 0, 0x10000),
-            new RomPart(RomType.Luminance3,     "EPROM_4008_102_56771_CSUM_1A71.BIN", 0, 0x10000),
-            new RomPart(RomType.LuminanceLSB,   "EPROM_4008_102_56781_CSUM_8E52.BIN", 0, 0x10000),
-            new RomPart(RomType.ChrominanceRY0, "EPROM_4008_102_56791_CSUM_C1EA.BIN", 0, 0x10000),
-            new RomPart(RomType.ChrominanceRY1, "EPROM_4008_102_56801_CSUM_C1D0.BIN", 0, 0x10000),
-            new RomPart(RomType.ChrominanceBY0, "EPROM_4008_102_56811_CSUM_B3AC.BIN", 0, 0x10000),
-            new RomPart(RomType.ChrominanceBY1, "EPROM_4008_102_56821_CSUM_B3EC.BIN", 0, 0x10000),
-            new RomPart(RomType.CPU,    "EPROM_4008_102_59401_CSUM_7300.BIN", 0, 0x10000),
-        };
-
-        private static List<RomPart> Pm5644m00ExtendedParts = new List<RomPart>
-        {
-            new RomPart(RomType.Luminance0,     "EPROM_4008_102_56741_CSUM_0D4A.BIN", 0, 0x80000),
-            new RomPart(RomType.Luminance1,     "EPROM_4008_102_56751_CSUM_F7B6.BIN", 0, 0x80000),
-            new RomPart(RomType.Luminance2,     "EPROM_4008_102_56761_CSUM_03DF.BIN", 0, 0x80000),
-            new RomPart(RomType.Luminance3,     "EPROM_4008_102_56771_CSUM_1A71.BIN", 0, 0x80000),
-            new RomPart(RomType.LuminanceLSB,   "EPROM_4008_102_56781_CSUM_8E52.BIN", 0, 0x80000),
-            new RomPart(RomType.ChrominanceRY0, "EPROM_4008_102_56791_CSUM_C1EA.BIN", 0, 0x80000),
-            new RomPart(RomType.ChrominanceRY1, "EPROM_4008_102_56801_CSUM_C1D0.BIN", 0, 0x80000),
-            new RomPart(RomType.ChrominanceBY0, "EPROM_4008_102_56811_CSUM_B3AC.BIN", 0, 0x80000),
-            new RomPart(RomType.ChrominanceBY1, "EPROM_4008_102_56821_CSUM_B3EC.BIN", 0, 0x80000),
-            new RomPart(RomType.CPU,    "EPROM_4008_102_59401_CSUM_7300.BIN", 0, 0x10000),
-        };
 
         private static List<RomPart> Pm5644p00Parts = new List<RomPart>
         {
-            new RomPart(RomType.Luminance0,     "EPROM_4008_102_57161_CSUM_E601.BIN", 0, 0x10000),
-            new RomPart(RomType.Luminance1,     "EPROM_4008_102_57171_CSUM_D3B6.BIN", 0, 0x10000),
-            new RomPart(RomType.Luminance2,     "EPROM_4008_102_57181_CSUM_DE42.BIN", 0, 0x10000),
-            new RomPart(RomType.Luminance3,     "EPROM_4008_102_57191_CSUM_F178.BIN", 0, 0x10000),
-            new RomPart(RomType.LuminanceLSB,   "EPROM_4008_102_57201_CSUM_E138.BIN", 0, 0x10000),
-            new RomPart(RomType.ChrominanceRY0, "EPROM_4008_102_56851_CSUM_0379.BIN", 0, 0x10000),
-            new RomPart(RomType.ChrominanceRY1, "EPROM_4008_102_56861_CSUM_0393.BIN", 0, 0x10000),
-            new RomPart(RomType.ChrominanceBY0, "EPROM_4008_102_56831_CSUM_6C99.BIN", 0, 0x10000),
-            new RomPart(RomType.ChrominanceBY1, "EPROM_4008_102_56841_CSUM_6CF9.BIN", 0, 0x10000),
-            new RomPart(RomType.CPU,    "EPROM_4008_102_59391_CSUM_0D00.BIN", 0, 0x10000),
+
         };
 
         public void OpenSet(GeneratorType type, string directory, int vectorTableIndex)
@@ -143,60 +198,15 @@ namespace PhilipsPatternRom.Converter
             ChrominanceRySamples.Clear();
             ChrominanceBySamples.Clear();
 
-            switch (type)
-            {
-                case GeneratorType.Pm5644g00:
-                    _set = Pm5644g00Parts;
-                    Standard = GeneratorStandard.PAL;
-                    _vectorTableStart = 0x52F6;
-                    _vectorTableLength = 0xD98;
-                    break;
-                case GeneratorType.Pm5644g00Extended:
-                    _set = Pm5644g00ExtendedParts;
-                    Standard = GeneratorStandard.PAL;
-                    _vectorTableStart = 0x52F6;
-                    _vectorTableLength = 0xD98;
-                    break;
-                case GeneratorType.Pm5644g913:
-                    _set = Pm5644g913Parts;
-                    Standard = GeneratorStandard.PAL_16_9;
-                    _vectorTableStart = 0x50C8;
-                    _vectorTableLength = 0x916;
-                    break;
-                case GeneratorType.Pm5644g924:
-                    _set = Pm5644g924Parts;
-                    Standard = GeneratorStandard.PAL_16_9;
-                    _vectorTableStart = 0x6D1D;
-                    _vectorTableLength = 0x918;
-                    break;
-                case GeneratorType.Pm5644m00:
-                    _set = Pm5644m00Parts;
-                    Standard = GeneratorStandard.NTSC;
-                    _vectorTableStart = 0x5314;
-                    _vectorTableLength = 0x5BE;
-                    break;
-                case GeneratorType.Pm5644m00Extended:
-                    _set = Pm5644m00ExtendedParts;
-                    Standard = GeneratorStandard.NTSC;
-                    _vectorTableStart = 0x5314;
-                    _vectorTableLength = 0x5BE;
-                    break;
-                case GeneratorType.Pm5644p00:
-                    _set = Pm5644p00Parts;
-                    Standard = GeneratorStandard.PAL_M;
-                    _vectorTableStart = 0x5314;
-                    _vectorTableLength = 0x113D;
-                    break;
-                default:
-                    throw new NotImplementedException();
-            }
+            var generator = _generators.Single(g => g.Type == type);
+            _set = generator.RomParts;
+            _vectorTableStart = generator.VectorTableStart;
+            _vectorTableLength = generator.VectorTableLength;
 
             foreach (var rom in _set)
-            {
                 rom.Load();
-            }
 
-            RomSize = _set.Single(el => el.Type == RomType.Luminance0).Length;
+            _romSize = _set.Single(el => el.Type == RomType.Luminance0).Length;
 
             var lum0Data = _set.Single(el => el.Type == RomType.Luminance0).Data;
             var lum1Data = _set.Single(el => el.Type == RomType.Luminance1).Data;
@@ -252,20 +262,29 @@ namespace PhilipsPatternRom.Converter
                 (_vectorTableLength * vectorTableIndex)).Take(_vectorTableLength).ToList();
         }
 
+        public void SetFilenamesAndSize(GeneratorType type)
+        {
+            var newSet = _generators.Single(g => g.Type == type);
+            foreach (var rom in _set)
+                rom.FileName = newSet.RomParts.Single(rp => rp.Type == rom.Type).FileName;
+
+            _romSize = newSet.RomParts.Single(rp => rp.Type == RomType.Luminance0).Length;
+        }
+
         public void SaveSet(string directory)
         {
             var romLength = LuminanceSamplesFull.Count / 4;
 
-            _set.Single(el => el.Type == RomType.Luminance0).Data = Enumerable.Repeat((byte)0xFF, RomSize).ToArray();
-            _set.Single(el => el.Type == RomType.Luminance1).Data = Enumerable.Repeat((byte)0xFF, RomSize).ToArray();
-            _set.Single(el => el.Type == RomType.Luminance2).Data = Enumerable.Repeat((byte)0xFF, RomSize).ToArray();
-            _set.Single(el => el.Type == RomType.Luminance3).Data = Enumerable.Repeat((byte)0xFF, RomSize).ToArray();
-            _set.Single(el => el.Type == RomType.LuminanceLSB).Data = Enumerable.Repeat((byte)0xFF, RomSize).ToArray();
+            _set.Single(el => el.Type == RomType.Luminance0).Data = Enumerable.Repeat((byte)0xFF, _romSize).ToArray();
+            _set.Single(el => el.Type == RomType.Luminance1).Data = Enumerable.Repeat((byte)0xFF, _romSize).ToArray();
+            _set.Single(el => el.Type == RomType.Luminance2).Data = Enumerable.Repeat((byte)0xFF, _romSize).ToArray();
+            _set.Single(el => el.Type == RomType.Luminance3).Data = Enumerable.Repeat((byte)0xFF, _romSize).ToArray();
+            _set.Single(el => el.Type == RomType.LuminanceLSB).Data = Enumerable.Repeat((byte)0xFF, _romSize).ToArray();
 
-            _set.Single(el => el.Type == RomType.ChrominanceRY0).Data = Enumerable.Repeat((byte)0xFF, RomSize).ToArray();
-            _set.Single(el => el.Type == RomType.ChrominanceRY1).Data = Enumerable.Repeat((byte)0xFF, RomSize).ToArray();
-            _set.Single(el => el.Type == RomType.ChrominanceBY0).Data = Enumerable.Repeat((byte)0xFF, RomSize).ToArray();
-            _set.Single(el => el.Type == RomType.ChrominanceBY1).Data = Enumerable.Repeat((byte)0xFF, RomSize).ToArray();
+            _set.Single(el => el.Type == RomType.ChrominanceRY0).Data = Enumerable.Repeat((byte)0xFF, _romSize).ToArray();
+            _set.Single(el => el.Type == RomType.ChrominanceRY1).Data = Enumerable.Repeat((byte)0xFF, _romSize).ToArray();
+            _set.Single(el => el.Type == RomType.ChrominanceBY0).Data = Enumerable.Repeat((byte)0xFF, _romSize).ToArray();
+            _set.Single(el => el.Type == RomType.ChrominanceBY1).Data = Enumerable.Repeat((byte)0xFF, _romSize).ToArray();
 
             for (int i = 0; i < romLength; i++)
             {

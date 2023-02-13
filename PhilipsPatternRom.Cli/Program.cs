@@ -13,7 +13,7 @@ namespace PhilipsPatternRom.Cli
 {
     class Program
     {
-        // /Generator Pm5644g00 /InROMs "N:\Electronics\Analog TV\PM5644\PM5644G00" /InputPatternIndex 2 /OutputPatternIndex 0 /AddApPattern "C:\Dev\PTV\PT5230\PT8633\TPD\BILLEDDATA\Data fra PTV_Brandskab\G\PHIL16X9\TXT_M_AP" /FixCircle16x9Clock /FixCircle16x9Ap /AddPattern "C:\Dev\PTV\PT5230\PT8633\TPD\BILLEDDATA\FUBK16X9\U_ANTIPA" /FixFubk16x9Centre /OutROMs "N:\Electronics\Analog TV\PM5644\PM5644G00_Modified"
+        // /Generator Pm5644g00 /OutputGenerator Pm5644g00Extended /InROMs "N:\Electronics\Analog TV\PM5644\PM5644G00" /InputPatternIndex 2 /OutputPatternIndex 0 /AddApPattern "C:\Dev\PTV\PT5230\PT8633\TPD\BILLEDDATA\Data fra PTV_Brandskab\G\PHIL16X9\TXT_M_AP" /FixCircle16x9Clock /FixCircle16x9Ap /AddPattern "C:\Dev\PTV\PT5230\PT8633\TPD\BILLEDDATA\FUBK16X9\U_ANTIPA" /FixFubk16x9Centre /OutROMs "N:\Electronics\Analog TV\PM5644\PM5644G00_Modified"
         // /Generator Pm5644m00 /InROMs "N:\Electronics\Analog TV\PM5644\PM5644M00" /InputPatternIndex 2 /OutputPatternIndex 0 /AddPattern "C:\Dev\PTV\PT5230\PT8633\TPD\BILLEDDATA\Data fra PTV_Brandskab\M\PHIL16X9\M_TXT" /OutROMs "N:\Electronics\Analog TV\PM5644\PM5644M00_Modified"
         // /Generator Pm5644g00 /InROMs "N:\Electronics\Analog TV\PM5644\PM5644G00" /RenderPattern /InputPatternIndex 2 /InputPatternFrame 1
         // /Generator Pm5644g00Extended /InROMs "N:\Electronics\Analog TV\PM5644\PM5644G00_Modified" /RenderPattern /InputPatternIndex 0 /InputPatternFrame 0
@@ -30,6 +30,7 @@ namespace PhilipsPatternRom.Cli
             int outputPatternIndex = -1;
             OperationType operation = OperationType.None;
             Converter.Models.GeneratorType type = PhilipsPatternRom.Converter.Models.GeneratorType.None;
+            Converter.Models.GeneratorType outputType = PhilipsPatternRom.Converter.Models.GeneratorType.None;
 
             for (int i = 0; i < args.Count(); i++)
             {
@@ -71,6 +72,10 @@ namespace PhilipsPatternRom.Cli
                         if (!Enum.TryParse(args[++i], out type))
                             Console.Error.WriteLine("Invalid generator type");
                         break;
+                    case "/OutputGenerator":
+                        if (!Enum.TryParse(args[++i], out outputType))
+                            Console.Error.WriteLine("Invalid generator type");
+                        break;
                     case "/InROMs":
                         inputDir = args[++i];
                         break;
@@ -100,7 +105,7 @@ namespace PhilipsPatternRom.Cli
                 }
                 if (type == PhilipsPatternRom.Converter.Models.GeneratorType.None)
                 {
-                    Console.Error.WriteLine("Invalid generator type");
+                    Console.Error.WriteLine("Invalid input generator type");
                     return;
                 }
             }
@@ -119,7 +124,11 @@ namespace PhilipsPatternRom.Cli
                             Console.Error.WriteLine("Input and output dir must be different");
                             return;
                         }
-
+                        if (outputType == PhilipsPatternRom.Converter.Models.GeneratorType.None)
+                        {
+                            Console.Error.WriteLine("Invalid output generator type");
+                            return;
+                        }
                         if (string.IsNullOrEmpty(outputDir))
                         {
                             Console.Error.WriteLine("Invalid output directory");
@@ -135,19 +144,19 @@ namespace PhilipsPatternRom.Cli
                             Console.Error.WriteLine("Non existent pattern source directory");
                             return;
                         }
-                        AddPatternsToRoms(type, inputDir, outputDir, inputPatternIndex, outputPatternIndex, patternsToAdd);
+                        AddPatternsToRoms(type, outputType, inputDir, outputDir, inputPatternIndex, outputPatternIndex, patternsToAdd);
                         break;
                     }
 
             }
         }
 
-        static void AddPatternsToRoms(PhilipsPatternRom.Converter.Models.GeneratorType type, string inputDir, string outputDir, int inputPatternIndex,
+        static void AddPatternsToRoms(PhilipsPatternRom.Converter.Models.GeneratorType type, PhilipsPatternRom.Converter.Models.GeneratorType outputType, string inputDir, string outputDir, int inputPatternIndex,
             int outputPatternStartIndex, List<InputPattern> antiPalPatternsToAdd)
         {
             var romGenerator = new RomGenerator();
 
-            romGenerator.Init(type, inputDir, inputPatternIndex);
+            romGenerator.Init(type, outputType, inputDir, inputPatternIndex);
 
             foreach (var pattern in antiPalPatternsToAdd.Where(el => el.IsAntiPal))
                 romGenerator.AddAntiPal(pattern.Directory, pattern.Fixes);
