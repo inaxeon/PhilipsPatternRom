@@ -55,10 +55,7 @@ namespace PhilipsPatternRom.Converter
                     new RomPart(RomType.ChrominanceRY1, "EPROM_4008_102_56251_CSUM_F397.BIN", 0, 0x10000),
                     new RomPart(RomType.ChrominanceBY0, "EPROM_4008_102_56261_CSUM_2DA9.BIN", 0, 0x10000),
                     new RomPart(RomType.ChrominanceBY1, "EPROM_4008_102_56271_CSUM_2E0F.BIN", 0, 0x10000),
-                    //new RomPart(RomType.VectorTable,    "EPROM_4008_102_59371_CSUM_A100.BIN", 0x52F6, 0xD98), // Clock full
-                    //new RomPart(RomType.VectorTable,    "EPROM_4008_102_59371_CSUM_A100.BIN", 0x608E, 0xD98), // Clock half
-                    //new RomPart(RomType.VectorTable,    "EPROM_4008_102_59371_CSUM_A100.BIN", 0x6E26, 0xD98), // Clock off
-                    new RomPart(RomType.CPU,    "EPROM_4008_102_59371_CSUM_A100.BIN", 0, 0x10000), // Clock off
+                    new RomPart(RomType.CPU,            "EPROM_4008_102_59371_CSUM_A100.BIN", 0, 0x10000),
                 }
             },
             new Generator
@@ -98,7 +95,7 @@ namespace PhilipsPatternRom.Converter
                     new RomPart(RomType.ChrominanceRY1, "EPROM_4008_102_58862_CSUM_81F9.BIN", 0, 0x80000),
                     new RomPart(RomType.ChrominanceBY0, "EPROM_4008_102_58872_CSUM_B4C3.BIN", 0, 0x80000),
                     new RomPart(RomType.ChrominanceBY1, "EPROM_4008_102_58882_CSUM_B4C3.BIN", 0, 0x80000),
-                    new RomPart(RomType.CPU,    "EPROM_4008_102_58761_CSUM_1800.BIN", 0, 0x10000),
+                    new RomPart(RomType.CPU,            "EPROM_4008_102_58761_CSUM_1800.BIN", 0, 0x10000),
                 }
             },
             new Generator
@@ -118,7 +115,7 @@ namespace PhilipsPatternRom.Converter
                     new RomPart(RomType.ChrominanceRY1, "EPROM_4008_002_00611_CSUM_F167.BIN", 0, 0x80000),
                     new RomPart(RomType.ChrominanceBY0, "EPROM_4008_002_00621_CSUM_06E1.BIN", 0, 0x80000),
                     new RomPart(RomType.ChrominanceBY1, "EPROM_4008_002_00631_CSUM_FFB8.BIN", 0, 0x80000),
-                    new RomPart(RomType.CPU,    "EPROM_4008_002_00541_CSUM_B700.BIN", 0, 0x10000),
+                    new RomPart(RomType.CPU,            "EPROM_4008_002_00541_CSUM_B700.BIN", 0, 0x10000),
                 }
             },
             new Generator
@@ -138,7 +135,7 @@ namespace PhilipsPatternRom.Converter
                     new RomPart(RomType.ChrominanceRY1, "EPROM_4008_102_56801_CSUM_C1D0.BIN", 0, 0x10000),
                     new RomPart(RomType.ChrominanceBY0, "EPROM_4008_102_56811_CSUM_B3AC.BIN", 0, 0x10000),
                     new RomPart(RomType.ChrominanceBY1, "EPROM_4008_102_56821_CSUM_B3EC.BIN", 0, 0x10000),
-                    new RomPart(RomType.CPU,    "EPROM_4008_102_59401_CSUM_7300.BIN", 0, 0x10000),
+                    new RomPart(RomType.CPU,            "EPROM_4008_102_59401_CSUM_7300.BIN", 0, 0x10000),
                 }
             },
             new Generator
@@ -158,7 +155,7 @@ namespace PhilipsPatternRom.Converter
                     new RomPart(RomType.ChrominanceRY1, "EPROM_4008_102_56801_CSUM_C1D0.BIN", 0, 0x80000),
                     new RomPart(RomType.ChrominanceBY0, "EPROM_4008_102_56811_CSUM_B3AC.BIN", 0, 0x80000),
                     new RomPart(RomType.ChrominanceBY1, "EPROM_4008_102_56821_CSUM_B3EC.BIN", 0, 0x80000),
-                    new RomPart(RomType.CPU,    "EPROM_4008_102_59401_CSUM_7300.BIN", 0, 0x10000),
+                    new RomPart(RomType.CPU,            "EPROM_4008_102_59401_CSUM_7300.BIN", 0, 0x10000),
                 }
             },
             new Generator
@@ -178,16 +175,9 @@ namespace PhilipsPatternRom.Converter
                     new RomPart(RomType.ChrominanceRY1, "EPROM_4008_102_56861_CSUM_0393.BIN", 0, 0x10000),
                     new RomPart(RomType.ChrominanceBY0, "EPROM_4008_102_56831_CSUM_6C99.BIN", 0, 0x10000),
                     new RomPart(RomType.ChrominanceBY1, "EPROM_4008_102_56841_CSUM_6CF9.BIN", 0, 0x10000),
-                    new RomPart(RomType.CPU,    "EPROM_4008_102_59391_CSUM_0D00.BIN", 0, 0x10000),
+                    new RomPart(RomType.CPU,            "EPROM_4008_102_59391_CSUM_0D00.BIN", 0, 0x10000),
                 }
             },
-        };
-
-
-
-        private static List<RomPart> Pm5644p00Parts = new List<RomPart>
-        {
-
         };
 
         public void OpenSet(GeneratorType type, string directory, int vectorTableIndex)
