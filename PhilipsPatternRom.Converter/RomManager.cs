@@ -60,7 +60,7 @@ namespace PhilipsPatternRom.Converter
             },
             new Generator
             {
-                Type = GeneratorType.Pm5644g00Extended,
+                Type = GeneratorType.Pm5644g00MultiPattern,
                 Standard = GeneratorStandard.PAL,
                 VectorTableStart = 0x52F6,
                 VectorTableLength = 0xD98,
@@ -140,7 +140,7 @@ namespace PhilipsPatternRom.Converter
             },
             new Generator
             {
-                Type = GeneratorType.Pm5644m00Extended,
+                Type = GeneratorType.Pm5644m00MultiPattern,
                 Standard = GeneratorStandard.NTSC,
                 VectorTableStart = 0x5314,
                 VectorTableLength = 0x5BE,
