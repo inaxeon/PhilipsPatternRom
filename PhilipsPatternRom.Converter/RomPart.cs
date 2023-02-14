@@ -35,7 +35,7 @@ namespace PhilipsPatternRom.Converter
                 // It's a regex
                 var allFiles = Directory.GetFiles(".");
                 var regex = new Regex(finalFileName);
-                finalFileName = allFiles.First(el => regex.Match(el).Success);
+                finalFileName = allFiles.Single(el => regex.Match(el).Success);
             }
 
             using (BinaryReader reader = new BinaryReader(new FileStream(finalFileName, FileMode.Open)))
@@ -50,6 +50,42 @@ namespace PhilipsPatternRom.Converter
         {
             string finalFileName = FileName;
 
+            if (Type == RomType.CPU)
+            {
+                // The Philips "chicken-and-egg" checksum mechanism, where the checksum is included in the checksum,
+                // Not sure of a more elegant way of doing this...
+                // This is why the CPU ROM's checksum always ends in 00h
+
+                Data[0xFFFE] = 0x00;
+                Data[0xFFFF] = 0x00;
+
+                do
+                {
+                    unchecked
+                    {
+                        int cs = 0;
+
+                        Data[0xFFFE]++;
+
+                        if (IsCorrectChecksum(Data))
+                        {
+                            cs = ComputeChecksum16(Data);
+                            Data[0xFFFF] = (byte)(cs >> 8);
+
+                            while (!IsCorrectChecksum(Data))
+                                Data[0xFFFE]--;
+
+                            break;
+                        }
+
+                        cs = ComputeChecksum16(Data);
+
+                        Data[0xFFFF] = (byte)(cs >> 8);
+                    }
+
+                } while (true);
+            }
+
             if (FileName.Contains("\\"))
             {
                 // It's a regex. Replace with checksum
@@ -57,6 +93,16 @@ namespace PhilipsPatternRom.Converter
             }
 
             File.WriteAllBytes(Path.GetFileNameWithoutExtension(finalFileName) + ".BIN", Data);
+        }
+
+        private bool IsCorrectChecksum(byte[] buffer)
+        {
+            ushort cs = ComputeChecksum16(buffer);
+
+            var sum = buffer[0xFFFF] - (byte)cs >> 8;
+            var lower = (byte)(cs & 0xFF);
+
+            return sum == 0 && lower == 0;
         }
 
         public static ushort ComputeChecksum16(byte[] buffer)

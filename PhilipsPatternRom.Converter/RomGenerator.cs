@@ -491,23 +491,22 @@ namespace PhilipsPatternRom.Converter
         private void ApplyPatternFixes(PatternFixes fixes)
         {
             if ((fixes & PatternFixes.FixCircle16x9Clock) == PatternFixes.FixCircle16x9Clock)
-            {
                 FixCircle16x9Clock();
-            }
+
+            if ((fixes & PatternFixes.FixCircle16x9BottomBox) == PatternFixes.FixCircle16x9BottomBox)
+                FixCircle16x9BottomBox();
 
             if ((fixes & PatternFixes.FixCircle16x9Ap) == PatternFixes.FixCircle16x9Ap)
-            {
                 FixCircle16x9Ap();
-            }
 
             if ((fixes & PatternFixes.FixFubk16x9Centre) == PatternFixes.FixFubk16x9Centre)
-            {
                 FixFubk16x9Centre();
-            }
         }
 
         private void FixCircle16x9Clock()
         {
+            var totalLines = _rySamples.Count / _lineLength / 2;
+
             // Samples for centre without clock cut-out. Extracted from the GREY10 version of the pattern.
             ushort[] centreWithClock = { 64, 97, 495, 902, 825, 358, 65, 64, 64, 64, 64, 64,
                     64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
@@ -529,23 +528,46 @@ namespace PhilipsPatternRom.Converter
                     286, 766, 927, 575, 134, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
                     64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 65, 358, 825, 902, 495, 97, 64 };
 
+            FixCircle16x9Clock(centreWithClock, 0);
+            FixCircle16x9Clock(centreWithClock, totalLines);
+        }
+
+        private void FixCircle16x9Clock(ushort[] centreWithClock, int startLine)
+        {
             for (int line = 268; line < 287; line++)
             {
                 for (int i = 0; i < centreWithClock.Length; i++)
-                    _ySamples[(line * _lineLength) + 340 + i] = centreWithClock[i];
+                    _ySamples[((line + startLine) * _lineLength) + 340 + i] = centreWithClock[i];
             }
 
             // Most central two lines without clock cut-out
             for (int line = 287; line < 289; line++)
             {
                 for (int i = 0; i < centreWithClock.Length; i++)
-                    _ySamples[(line * _lineLength) + 340 + i] = 940; // Solid white
+                    _ySamples[((line + startLine) * _lineLength) + 340 + i] = 940; // Solid white
             }
 
             for (int line = 289; line < 308; line++)
             {
                 for (int i = 0; i < centreWithClock.Length; i++)
-                    _ySamples[(line * _lineLength) + 340 + i] = centreWithClock[i];
+                    _ySamples[((line + startLine) * _lineLength) + 340 + i] = centreWithClock[i];
+            }
+        }
+
+        private void FixCircle16x9BottomBox()
+        {
+            var totalLines = _rySamples.Count / _lineLength / 2;
+
+            for (var line = 434; line < 476; line++)
+            {
+                for (int i = 0; i < 8; i++)
+                    _ySamples[(line * _lineLength) + i + 427] = 64;
+            }
+
+            for (var line = 434; line < 476; line++)
+            {
+                for (int i = 0; i < 8; i++)
+                    _ySamples[((line + totalLines) * _lineLength) + i + 427] = 64;
             }
         }
 
