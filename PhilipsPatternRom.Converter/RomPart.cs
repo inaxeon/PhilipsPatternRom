@@ -52,26 +52,24 @@ namespace PhilipsPatternRom.Converter
 
             if (Type == RomType.CPU)
             {
-                // The Philips "chicken-and-egg" checksum mechanism, where the checksum is included in the checksum,
-                // Not sure of a more elegant way of doing this...
-                // This is why the CPU ROM's checksum always ends in 00h
+                // My implementation of the PM5644's "chicken-and-egg" checksum mechanism, where the checksum is included in the checksum,
+                // This is why the CPU ROM's checksum always ends in 00h. There is probably a more elegant way of doing this...
 
+                int cs = ComputeChecksum16(Data);
                 Data[0xFFFE] = 0x00;
-                Data[0xFFFF] = 0x00;
+                Data[0xFFFF] = (byte)(cs >> 8);
 
                 do
                 {
                     unchecked
                     {
-                        int cs = 0;
-
-                        Data[0xFFFE]++;
-
                         if (IsCorrectChecksum(Data))
                         {
+                            // My algorithm doesn't quite get the right result first go, so do one more pass
                             cs = ComputeChecksum16(Data);
                             Data[0xFFFF] = (byte)(cs >> 8);
 
+                            // And back off the difference byte until it's correct
                             while (!IsCorrectChecksum(Data))
                                 Data[0xFFFE]--;
 
@@ -79,7 +77,7 @@ namespace PhilipsPatternRom.Converter
                         }
 
                         cs = ComputeChecksum16(Data);
-
+                        Data[0xFFFE]++;
                         Data[0xFFFF] = (byte)(cs >> 8);
                     }
 
