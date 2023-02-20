@@ -28,9 +28,11 @@ namespace PhilipsPatternRom.Converter
 
         private List<Tuple<ConvertedComponents, ConvertedComponents, int>> _convertedComponents;
 
-        private bool _invertNewSamples;
-
         private int _targetOffset;
+
+        private bool _invertLuma;
+        private bool _invertChroma;
+        private bool _useDigitalFactors;
 
         public RomGenerator()
         {
@@ -46,12 +48,14 @@ namespace PhilipsPatternRom.Converter
                 _linesPerField /= 2;
         }
 
-        public void AddAntiPal(string directory, PatternFixes fixes)
+        public void AddAntiPal(string directory, bool useDigitalFactors, PatternFixes fixes)
         {
             if (_romManager.Standard == GeneratorStandard.NTSC)
                 throw new Exception("Cannot add Anti-PAL pattern for NTSC");
 
-            _invertNewSamples = true;
+            _invertLuma = useDigitalFactors;
+            _invertChroma = useDigitalFactors;
+            _useDigitalFactors = useDigitalFactors;
 
             LoadSamples(directory);
             ApplyPatternFixes(fixes);
@@ -66,9 +70,11 @@ namespace PhilipsPatternRom.Converter
             _convertedComponents.Add(new Tuple<ConvertedComponents, ConvertedComponents, int>(ap1, ap2, ap2.NextOffset));
         }
 
-        public void AddRegular(string directory, PatternFixes fixes)
+        public void AddRegular(string directory, bool useDigitalFactors, PatternFixes fixes)
         {
-            _invertNewSamples = true;
+            _invertLuma = useDigitalFactors;
+            _invertChroma = useDigitalFactors;
+            _useDigitalFactors = useDigitalFactors;
 
             LoadSamples(directory);
             ApplyPatternFixes(fixes);
@@ -393,7 +399,7 @@ namespace PhilipsPatternRom.Converter
         {
             int sourceAdjusted = source;
 
-            // Original:
+            // Original (Digital):
             // Black level: 0x2D4 (724)
             // White level: 0xA4 (164)
 
@@ -401,24 +407,23 @@ namespace PhilipsPatternRom.Converter
             // Black level: 0x40 (64)
             // White level: 0x3AC (940)
 
+            // New (Analogue):
+            // Black level: 3072
+            // White level: 832
+
             ushort originalBlackLevel = 724;
             ushort originalWhiteLevel = 164;
 
-            ushort newBlackLevel = 64;
-            ushort newWhiteLevel = 940;
+            ushort newBlackLevel = _useDigitalFactors ? (ushort)64 : (ushort)3072;
+            ushort newWhiteLevel = _useDigitalFactors ? (ushort)940 : (ushort)832;
 
             var originalRange = originalBlackLevel - originalWhiteLevel;
-            var newRange = _invertNewSamples ? newWhiteLevel - newBlackLevel : newBlackLevel - newWhiteLevel; //Invert
+            var newRange = _invertLuma ? newWhiteLevel - newBlackLevel : newBlackLevel - newWhiteLevel; //Invert
 
-            if (_invertNewSamples)
-            {
-                sourceAdjusted -= newBlackLevel;
+            sourceAdjusted -= (_invertLuma ? newBlackLevel : newWhiteLevel);
+
+            if (_invertLuma)
                 sourceAdjusted = newRange - sourceAdjusted;
-            }
-            else
-            {
-                sourceAdjusted -= newWhiteLevel;
-            }
 
             decimal scaleFactor = (decimal)originalRange / (decimal)newRange;
             decimal adjusted = (decimal)sourceAdjusted * scaleFactor;
@@ -447,21 +452,26 @@ namespace PhilipsPatternRom.Converter
             // Centre: 512
             // Min: 176
 
+            // Alg RY:
+            // 770 254
+            // Alg BY:
+            // 695 329
+
             var originalMax = type == PatternType.RminusY ? 193 : 174;
             var originalCentre = 128;
 
-            var newMax = 848;
+            var newMax = _useDigitalFactors ? 848 : (type == PatternType.RminusY ? 254 : 329);
             var newCentre = 512;
 
             decimal originalRange = (originalMax - originalCentre);
-            decimal newRange = (newMax - newCentre);
+            decimal newRange = _useDigitalFactors ? (newMax - newCentre) : (newCentre - newMax);
 
             decimal scaleFactor = (decimal)originalRange / (decimal)newRange;
 
             int sourceAdjusted = (source - newCentre);
             decimal adjusted = (decimal)sourceAdjusted * scaleFactor;
 
-            if ((_invertNewSamples && _romManager.Standard == GeneratorStandard.PAL) || (_romManager.Standard == GeneratorStandard.NTSC && type == PatternType.BminusY))
+            if ((_invertChroma && _romManager.Standard == GeneratorStandard.PAL) || (_romManager.Standard == GeneratorStandard.NTSC && type == PatternType.BminusY))
                 adjusted = -adjusted;
 
             adjusted += originalCentre;
@@ -505,6 +515,9 @@ namespace PhilipsPatternRom.Converter
 
         private void FixCircle16x9Clock()
         {
+            if (!_useDigitalFactors)
+                throw new Exception("This fix is for digital patterns only");
+
             var totalLines = _rySamples.Count / _lineLength / 2;
 
             // Samples for centre without clock cut-out. Extracted from the GREY10 version of the pattern.
@@ -534,6 +547,9 @@ namespace PhilipsPatternRom.Converter
 
         private void FixCircle16x9Clock(ushort[] centreWithClock, int startLine)
         {
+            if (!_useDigitalFactors)
+                throw new Exception("This fix is for digital patterns only");
+
             for (int line = 268; line < 287; line++)
             {
                 for (int i = 0; i < centreWithClock.Length; i++)
@@ -556,6 +572,9 @@ namespace PhilipsPatternRom.Converter
 
         private void FixCircle16x9BottomBox()
         {
+            if (!_useDigitalFactors)
+                throw new Exception("This fix is for digital patterns only");
+
             var totalLines = _rySamples.Count / _lineLength / 2;
 
             for (var line = 434; line < 476; line++)
@@ -579,6 +598,9 @@ namespace PhilipsPatternRom.Converter
             // for analogue. But it's just not as good as true analogue anti-PAL so
             // this fixes it up by re-arranging the samples accordingly. The result
             // is equivalent to the G/924's pattern.
+
+            if (!_useDigitalFactors)
+                throw new Exception("This fix is for digital patterns only");
 
             var totalLines = _rySamples.Count / _lineLength / 2;
             var originalLineToPreserve = 202;

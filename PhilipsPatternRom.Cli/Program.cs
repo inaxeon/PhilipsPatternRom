@@ -13,7 +13,8 @@ namespace PhilipsPatternRom.Cli
 {
     class Program
     {
-        // /Generator Pm5644g00 /OutputGenerator Pm5644g00MultiPattern /InROMs "N:\Electronics\Analog TV\PM5644\PM5644G00" /InputPatternIndex 2 /OutputPatternIndex 0 /AddApPattern "C:\Dev\PTV\PT5230\PT8633\TPD\BILLEDDATA\Data fra PTV_Brandskab\G\PHIL16X9\TXT_M_AP" /FixCircle16x9Clock /FixCircle16x9BottomBox /FixCircle16x9Ap /AddPattern "C:\Dev\PTV\PT5230\PT8633\TPD\BILLEDDATA\FUBK16X9\U_ANTIPA" /FixFubk16x9Centre /OutROMs "N:\Electronics\Analog TV\PM5644\PM5644G00_Modified"
+        // /Generator Pm5644g00 /OutputGenerator Pm5644g00MultiPattern /InROMs "N:\Electronics\Analog TV\PM5644\PM5644G00" /InputPatternIndex 2 /OutputPatternIndex 0 /AddDigApPattern "C:\Dev\PTV\PT5230\PT8633\TPD\BILLEDDATA\Data fra PTV_Brandskab\G\PHIL16X9\TXT_M_AP" /FixCircle16x9Clock /FixCircle16x9BottomBox /FixCircle16x9Ap /AddDigPattern "C:\Dev\PTV\PT5230\PT8633\TPD\BILLEDDATA\FUBK16X9\U_ANTIPA" /FixFubk16x9Centre /OutROMs "N:\Electronics\Analog TV\PM5644\PM5644G00_Modified"
+        // /Generator Pm5644g00 /OutputGenerator Pm5644g00MultiPattern /InROMs "N:\Electronics\Analog TV\PM5644\PM5644G00" /InputPatternIndex 2 /OutputPatternIndex 0 /AddDigPattern "C:\Dev\PTV\PT5230\PT8633\TPD\BILLEDDATA\Data fra PTV_Brandskab\G\PHIL16X9\TXT_U_AP" /AddAlgApPattern "C:\Dev\PTV\PT5230\PT8631\TPD\BILLEDDATA\FUBK16X9\ANTIPAL" /FixFubk16x9Centre /OutROMs "N:\Electronics\Analog TV\PM5644\PM5644G00_Modified"
         // /Generator Pm5644m00 /InROMs "N:\Electronics\Analog TV\PM5644\PM5644M00" /InputPatternIndex 2 /OutputPatternIndex 0 /AddPattern "C:\Dev\PTV\PT5230\PT8633\TPD\BILLEDDATA\Data fra PTV_Brandskab\M\PHIL16X9\M_TXT" /OutROMs "N:\Electronics\Analog TV\PM5644\PM5644M00_Modified"
         // /Generator Pm5644g00 /InROMs "N:\Electronics\Analog TV\PM5644\PM5644G00" /RenderPattern /InputPatternIndex 2 /InputPatternFrame 1
         // /Generator Pm5644g00MultiPattern /InROMs "N:\Electronics\Analog TV\PM5644\PM5644G00_Modified" /RenderPattern /InputPatternIndex 0 /InputPatternFrame 0
@@ -39,9 +40,21 @@ namespace PhilipsPatternRom.Cli
                     case "/RenderPattern":
                         operation = OperationType.RenderPattern;
                         break;
-                    case "/AddApPattern":
+                    case "/AddAlgPattern":
                         operation = OperationType.AddPattern;
-                        patternsToAdd.Add(new InputPattern(args[++i], true, 0));
+                        patternsToAdd.Add(new InputPattern(args[++i], false, false, 0));
+                        break;
+                    case "/AddAlgApPattern":
+                        operation = OperationType.AddPattern;
+                        patternsToAdd.Add(new InputPattern(args[++i], false, true, 0));
+                        break;
+                    case "/AddDigPattern":
+                        operation = OperationType.AddPattern;
+                        patternsToAdd.Add(new InputPattern(args[++i], true, false, 0));
+                        break;
+                    case "/AddDigApPattern":
+                        operation = OperationType.AddPattern;
+                        patternsToAdd.Add(new InputPattern(args[++i], true, true, 0));
                         break;
                     case "/Exact":
                         matchSource = false;
@@ -66,10 +79,6 @@ namespace PhilipsPatternRom.Cli
                         break;
                     case "/OutputPatternIndex":
                         outputPatternIndex = int.Parse(args[++i]);
-                        break;
-                    case "/AddPattern":
-                        operation = OperationType.AddPattern;
-                        patternsToAdd.Add(new InputPattern(args[++i], false, 0));
                         break;
                     case "/Generator":
                         if (!Enum.TryParse(args[++i], out type))
@@ -162,10 +171,10 @@ namespace PhilipsPatternRom.Cli
             romGenerator.Init(type, outputType, inputDir, inputPatternIndex);
 
             foreach (var pattern in antiPalPatternsToAdd.Where(el => el.IsAntiPal))
-                romGenerator.AddAntiPal(pattern.Directory, pattern.Fixes);
+                romGenerator.AddAntiPal(pattern.Directory, pattern.IsDigital, pattern.Fixes);
 
             foreach (var pattern in antiPalPatternsToAdd.Where(el => !el.IsAntiPal))
-                romGenerator.AddRegular(pattern.Directory, pattern.Fixes);
+                romGenerator.AddRegular(pattern.Directory, pattern.IsDigital, pattern.Fixes);
 
             romGenerator.Save(outputDir, outputPatternStartIndex);
         }
@@ -411,24 +420,6 @@ namespace PhilipsPatternRom.Cli
                 b = 255;
 
             return Color.FromArgb((int)r, (int)g, (int)b);
-        }
-
-        static void ReadVectors()
-        {
-            var file = File.ReadAllBytes(@"N:\Electronics\Analog TV\PM5644\PM5644P00\EPROM_4008_102_59391_CSUM_0D00.BIN");
-            var lastByte = 0x7587;
-
-            for (int i = lastByte; ;)
-            {
-                var byte1 = file[i--];
-                var byte2 = file[i--];
-                var byte3 = file[i--];
-
-                if (byte3 != 0x00 && byte3 != 0x01 && byte3 != 0x02 && byte3 != 0x03)
-                {
-
-                }
-            }
         }
     }
 }
