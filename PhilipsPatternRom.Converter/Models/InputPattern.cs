@@ -8,7 +8,7 @@ namespace PhilipsPatternRom.Converter.Models
 {
     public class InputPattern
     {
-        public InputPattern(string directory, bool isDigital, bool isAntiPal, PatternFixes fixes)
+        public InputPattern(string directory, bool isDigital, bool isAntiPal, PatternFixType fixes)
         {
             Directory = directory;
             IsDigital = isDigital;
@@ -19,6 +19,6 @@ namespace PhilipsPatternRom.Converter.Models
         public string Directory { get; set; }
         public bool IsAntiPal { get; set; }
         public bool IsDigital { get; set; }
-        public PatternFixes Fixes { get; set; }
+        public PatternFixType Fixes { get; set; }
     }
 }

@@ -13,8 +13,8 @@ namespace PhilipsPatternRom.Cli
 {
     class Program
     {
-        // /Generator Pm5644g00 /OutputGenerator Pm5644g00MultiPattern /InROMs "N:\Electronics\Analog TV\PM5644\PM5644G00" /InputPatternIndex 2 /OutputPatternIndex 0 /AddDigApPattern "C:\Dev\PTV\PT5230\PT8633\TPD\BILLEDDATA\Data fra PTV_Brandskab\G\PHIL16X9\TXT_M_AP" /FixCircle16x9Clock /FixCircle16x9BottomBox /FixCircle16x9Ap /AddDigPattern "C:\Dev\PTV\PT5230\PT8633\TPD\BILLEDDATA\FUBK16X9\U_ANTIPA" /FixFubk16x9Centre /OutROMs "N:\Electronics\Analog TV\PM5644\PM5644G00_Modified"
-        // /Generator Pm5644g00 /OutputGenerator Pm5644g00MultiPattern /InROMs "N:\Electronics\Analog TV\PM5644\PM5644G00" /InputPatternIndex 2 /OutputPatternIndex 0 /AddDigPattern "C:\Dev\PTV\PT5230\PT8633\TPD\BILLEDDATA\Data fra PTV_Brandskab\G\PHIL16X9\TXT_U_AP" /AddAlgApPattern "C:\Dev\PTV\PT5230\PT8631\TPD\BILLEDDATA\FUBK16X9\ANTIPAL" /FixFubk16x9Centre /OutROMs "N:\Electronics\Analog TV\PM5644\PM5644G00_Modified"
+        // /Generator Pm5644g00 /OutputGenerator Pm5644g00MultiPattern /InROMs "N:\Electronics\Analog TV\PM5644\PM5644G00" /InputPatternIndex 2 /OutputPatternIndex 0 /AddDigApPattern "C:\Dev\PTV\PT5230\PT8633\TPD\BILLEDDATA\Data fra PTV_Brandskab\G\PHIL16X9\TXT_M_AP" /FixDigCircle16x9Clock /FixDigCircle16x9BottomBox /FixDigCircle16x9Ap /AddDigPattern "C:\Dev\PTV\PT5230\PT8633\TPD\BILLEDDATA\FUBK16X9\U_ANTIPA" /FixDigFubk16x9Centre /OutROMs "N:\Electronics\Analog TV\PM5644\PM5644G00_Modified"
+        // /Generator Pm5644g00 /OutputGenerator Pm5644g00MultiPattern /InROMs "N:\Electronics\Analog TV\PM5644\PM5644G00" /InputPatternIndex 2 /OutputPatternIndex 0 /AddAlgApPattern "C:\Dev\PTV\PT5230\PT8631\TPD\BILLEDDATA\FUBK16X9\ANTIPAL" /AddDigPattern "C:\Dev\PTV\PT5230\PT8633\TPD\BILLEDDATA\Data fra PTV_Brandskab\G\PHIL16X9\TXT_U_AP" /OutROMs "N:\Electronics\Analog TV\PM5644\PM5644G00_Modified"
         // /Generator Pm5644m00 /InROMs "N:\Electronics\Analog TV\PM5644\PM5644M00" /InputPatternIndex 2 /OutputPatternIndex 0 /AddPattern "C:\Dev\PTV\PT5230\PT8633\TPD\BILLEDDATA\Data fra PTV_Brandskab\M\PHIL16X9\M_TXT" /OutROMs "N:\Electronics\Analog TV\PM5644\PM5644M00_Modified"
         // /Generator Pm5644g00 /InROMs "N:\Electronics\Analog TV\PM5644\PM5644G00" /RenderPattern /InputPatternIndex 2 /InputPatternFrame 1
         // /Generator Pm5644g00MultiPattern /InROMs "N:\Electronics\Analog TV\PM5644\PM5644G00_Modified" /RenderPattern /InputPatternIndex 0 /InputPatternFrame 0
@@ -59,17 +59,20 @@ namespace PhilipsPatternRom.Cli
                     case "/Exact":
                         matchSource = false;
                         break;
-                    case "/FixCircle16x9Clock":
-                        patternsToAdd.Last().Fixes |= PatternFixes.FixCircle16x9Clock;
+                    case "/FixDigCircle16x9Clock":
+                        patternsToAdd.Last().Fixes |= PatternFixType.FixDigCircle16x9Clock;
                         break;
-                    case "/FixCircle16x9Ap":
-                        patternsToAdd.Last().Fixes |= PatternFixes.FixCircle16x9Ap;
+                    case "/FixDigCircle16x9Ap":
+                        patternsToAdd.Last().Fixes |= PatternFixType.FixDigCircle16x9Ap;
                         break;
-                    case "/FixFubk16x9Centre":
-                        patternsToAdd.Last().Fixes |= PatternFixes.FixFubk16x9Centre;
+                    case "/FixDigFubk16x9Centre":
+                        patternsToAdd.Last().Fixes |= PatternFixType.FixDigFubk16x9Centre;
                         break;
-                    case "/FixCircle16x9BottomBox":
-                        patternsToAdd.Last().Fixes |= PatternFixes.FixCircle16x9BottomBox;
+                    case "/FixDigCircle16x9BottomBox":
+                        patternsToAdd.Last().Fixes |= PatternFixType.FixDigCircle16x9BottomBox;
+                        break;
+                    case "/FixAlgFubk16x9LowerIdBoxes":
+                        patternsToAdd.Last().Fixes |= PatternFixType.FixAlgFubk16x9LowerIdBoxes;
                         break;
                     case "/InputPatternIndex":
                         inputPatternIndex = int.Parse(args[++i]);

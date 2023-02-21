@@ -35,7 +35,12 @@ namespace PhilipsPatternRom.Converter
                 // It's a regex
                 var allFiles = Directory.GetFiles(".");
                 var regex = new Regex(finalFileName);
-                finalFileName = allFiles.Single(el => regex.Match(el).Success);
+                var matching = allFiles.Where(el => regex.Match(el).Success);
+
+                if (matching.Count() > 1)
+                    throw new Exception("More than one input file matches the search pattern: " + FileName);
+
+                finalFileName = matching.Single();
             }
 
             using (BinaryReader reader = new BinaryReader(new FileStream(finalFileName, FileMode.Open)))
