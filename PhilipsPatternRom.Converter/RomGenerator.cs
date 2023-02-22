@@ -12,19 +12,18 @@ namespace PhilipsPatternRom.Converter
     {
         private RomManager _romManager;
         private GeneratorType _outputType;
-        
+
+        private const int _sourceLines = 576;
         private const int _lineLength = 1024;
 
         private List<ushort> _existingYBackPorchSamples;
         private List<byte> _existingRyBackPorchSamples;
         private List<byte> _existingByBackPorchSamples;
 
-        private List<ushort> _ySamples;
-        private List<ushort> _rySamples;
-        private List<ushort> _bySamples;
-
         private List<Tuple<byte, byte, byte>> _sourceVectorEntries;
         private int _linesPerField;
+
+        private List<PatternSamples> _patternLineSamples { get; set; }
 
         private List<Tuple<ConvertedComponents, ConvertedComponents, int>> _convertedComponents;
 
@@ -53,32 +52,35 @@ namespace PhilipsPatternRom.Converter
             if (_romManager.Standard == GeneratorStandard.NTSC)
                 throw new Exception("Cannot add Anti-PAL pattern for NTSC");
 
+            var patternSamples = new PatternSamples();
+
             _invertLuma = useDigitalFactors;
             _invertChroma = useDigitalFactors;
             _useDigitalFactors = useDigitalFactors;
 
-            LoadSamples(directory);
-            ApplyPatternFixes(fixes);
-            Do422Conversion();
+            LoadSamples(patternSamples, directory);
+            ApplyPatternFixes(patternSamples, fixes);
+            patternSamples.Do422Conversion();
 
             var lastPattern = _convertedComponents.LastOrDefault();
             var initialOffset = lastPattern != null ? lastPattern.Item3 : _targetOffset;
 
-            var ap1 = ConvertPatternPal(0, 0, initialOffset);
-            var ap2 = ConvertPatternPal(580, ap1.NextLine, ap1.NextOffset);
+            var ap1 = ConvertPatternPal(patternSamples.Frame0, 0, initialOffset);
+            var ap2 = ConvertPatternPal(patternSamples.Frame1, 580, ap1.NextOffset);
 
             _convertedComponents.Add(new Tuple<ConvertedComponents, ConvertedComponents, int>(ap1, ap2, ap2.NextOffset));
         }
 
         public void AddRegular(string directory, bool useDigitalFactors, PatternFixType fixes)
         {
+            var patternSamples = new PatternSamples();
             _invertLuma = useDigitalFactors;
             _invertChroma = useDigitalFactors;
             _useDigitalFactors = useDigitalFactors;
 
-            LoadSamples(directory);
-            ApplyPatternFixes(fixes);
-            Do422Conversion();
+            LoadSamples(patternSamples, directory);
+            ApplyPatternFixes(patternSamples, fixes);
+            patternSamples.Do422Conversion();
 
             var lastPattern = _convertedComponents.LastOrDefault();
             var initialOffset = lastPattern != null ? lastPattern.Item3 : _targetOffset;
@@ -89,10 +91,10 @@ namespace PhilipsPatternRom.Converter
             {
                 case GeneratorStandard.PAL:
                 case GeneratorStandard.PAL_M:
-                    ap1 = ConvertPatternPal(0, 0, initialOffset);
+                    ap1 = ConvertPatternPal(patternSamples.Frame0, 0, initialOffset);
                     break;
                 case GeneratorStandard.NTSC:
-                    ap1 = ConvertPatternNtsc(0, initialOffset);
+                    ap1 = ConvertPatternNtsc(patternSamples.Frame0, 0, initialOffset);
                     break;
                 default:
                     throw new NotImplementedException();
@@ -131,49 +133,65 @@ namespace PhilipsPatternRom.Converter
             _existingByBackPorchSamples = _romManager.ChrominanceBySamples.Skip(addr).Take(64).ToList();
         }
 
-        private void LoadSamples(string directory)
+        private void LoadSamples(PatternSamples patternSamples, string directory)
         {
             var yChannelFile = Path.Combine(directory, "CHANNEL1.DAT");
             var byChannelFile = Path.Combine(directory, "CHANNEL2.DAT");
             var ryChannelFile = Path.Combine(directory, "CHANNEL3.DAT");
 
-            _ySamples = new List<ushort>();
-            _rySamples = new List<ushort>();
-            _bySamples = new List<ushort>();
+            var ySamples = new List<ushort>();
+            var rySamples = new List<ushort>();
+            var bySamples = new List<ushort>();
 
             var data = File.ReadAllBytes(yChannelFile);
 
             for (int i = 0; i < data.Length; i += 2)
-                _ySamples.Add((ushort)(data[i + 1] << 8 | data[i]));
+                ySamples.Add((ushort)(data[i + 1] << 8 | data[i]));
 
             data = File.ReadAllBytes(ryChannelFile);
 
             for (int i = 0; i < data.Length; i += 2)
-                _rySamples.Add((ushort)(data[i + 1] << 8 | data[i]));
+                rySamples.Add((ushort)(data[i + 1] << 8 | data[i]));
 
             data = File.ReadAllBytes(byChannelFile);
 
             for (int i = 0; i < data.Length; i += 2)
-                _bySamples.Add((ushort)(data[i + 1] << 8 | data[i]));
+                bySamples.Add((ushort)(data[i + 1] << 8 | data[i]));
 
+            var totalLines = ySamples.Count / _lineLength;
+
+            if (totalLines == 576 || totalLines == 1152)
+            {
+                patternSamples.Frame0 = new List<LineSamples>();
+
+                for (int i = 0; i < _sourceLines; i++)
+                {
+                    var lineSamples = new LineSamples(ySamples.Skip(_lineLength * i).Take(1024).ToList(),
+                        rySamples.Skip(_lineLength * i).Take(1024).ToList(), bySamples.Skip(_lineLength * i).Take(1024).ToList());
+
+                    patternSamples.Frame0.Add(lineSamples);
+                }
+            }
+            if (totalLines == (_sourceLines * 2))
+            {
+                patternSamples.Frame1 = new List<LineSamples>();
+
+                for (int i = _sourceLines; i < (_sourceLines * 2); i++)
+                {
+                    var lineSamples = new LineSamples(ySamples.Skip(_lineLength * i).Take(1024).ToList(),
+                        rySamples.Skip(_lineLength * i).Take(1024).ToList(), bySamples.Skip(_lineLength * i).Take(1024).ToList());
+
+                    patternSamples.Frame1.Add(lineSamples);
+                }
+            }
+
+            if (totalLines != _sourceLines && totalLines != (_sourceLines * 2))
+            {
+                throw new Exception("Source file has an unexpected number of lines");
+            }
         }
 
-        private void Do422Conversion()
-        {
-            var ryCopy = new List<ushort>(_rySamples);
-            _rySamples.Clear();
-
-            for (int i = 0; i < ryCopy.Count; i += 2)
-                _rySamples.Add((ushort)((ryCopy[i] + ryCopy[i + 1]) / 2));
-
-            var byCopy = new List<ushort>(_bySamples);
-            _bySamples.Clear();
-
-            for (int i = 0; i < byCopy.Count; i += 2)
-                _bySamples.Add((ushort)((byCopy[i] + byCopy[i + 1]) / 2));
-        }
-        
-        private ConvertedComponents ConvertPatternPal(int baseVector, int line, int offset)
+        private ConvertedComponents ConvertPatternPal(List<LineSamples> samples, int baseVector, int offset)
         {
             var ret = new ConvertedComponents
             {
@@ -184,9 +202,10 @@ namespace PhilipsPatternRom.Converter
             };
 
             int i = 0;
+            int line = 0;
 
             // Right side castellation
-            ConvertAllSamples(ret, line++, offset);
+            ConvertAllSamples(samples[line++], ret, offset);
             ret.VectorTable[baseVector] = GetVectorForOffset(offset);
             offset += _lineLength;
 
@@ -196,21 +215,20 @@ namespace PhilipsPatternRom.Converter
             {
                 var alternateField = i + _linesPerField + 1;
 
-                ConvertAllSamples(ret, line++, offset);
+                ConvertAllSamples(samples[line++], ret, offset);
                 ret.VectorTable[baseVector + i] = GetVectorForOffset(offset);
-
                 offset += _lineLength;
 
-                ConvertAllSamples(ret, line++, offset);
+                ConvertAllSamples(samples[line++], ret, offset);
                 ret.VectorTable[baseVector + alternateField] = GetVectorForOffset(offset);
                 offset += _lineLength;
             }
 
-            ConvertAllSamples(ret, line++, offset);
+            ConvertAllSamples(samples[line++], ret, offset);
             ret.VectorTable[baseVector + 1] = GetVectorForOffset(offset);
             offset += _lineLength;
 
-            ConvertAllSamples(ret, line++, offset);
+            ConvertAllSamples(samples[line++], ret, offset);
             ret.VectorTable[baseVector + _linesPerField + 1] = GetVectorForOffset(offset);
             offset += _lineLength;
 
@@ -218,7 +236,7 @@ namespace PhilipsPatternRom.Converter
             line++;
 
             // Left side castellation
-            ConvertAllSamples(ret, line++, offset);
+            ConvertAllSamples(samples[line++], ret, offset);
             ret.VectorTable[baseVector + 291] = GetVectorForOffset(offset);
             offset += _lineLength;
 
@@ -239,7 +257,7 @@ namespace PhilipsPatternRom.Converter
             return ret;
         }
 
-        private ConvertedComponents ConvertPatternNtsc(int baseVector, int offset)
+        private ConvertedComponents ConvertPatternNtsc(List<LineSamples> samples, int baseVector, int offset)
         {
             var ret = new ConvertedComponents
             {
@@ -252,7 +270,7 @@ namespace PhilipsPatternRom.Converter
             int i = 0;
             int line = 0;
 
-            ConvertAllSamples(ret, 1, offset);
+            ConvertAllSamples(samples[1], ret, offset);
             ret.VectorTable[0] = GetVectorForOffset(offset);
             ret.VectorTable[486] = GetVectorForOffset(offset);
             ret.VectorTable[487] = GetVectorForOffset(offset);
@@ -260,7 +278,7 @@ namespace PhilipsPatternRom.Converter
             ret.VectorTable[489] = GetVectorForOffset(offset);
             offset += _lineLength;
 
-            ConvertAllSamples(ret, 485, offset);
+            ConvertAllSamples(samples[485], ret, offset);
             ret.VectorTable[1] = GetVectorForOffset(offset);
             offset += _lineLength;
 
@@ -275,17 +293,17 @@ namespace PhilipsPatternRom.Converter
             {
                 var alternateField = baseVector + i + _linesPerField - 1;
 
-                ConvertAllSamples(ret, line++, offset);
+                ConvertAllSamples(samples[line++], ret, offset);
                 ret.VectorTable[alternateField] = GetVectorForOffset(offset);
 
                 offset += _lineLength;
 
-                ConvertAllSamples(ret, line++, offset);
+                ConvertAllSamples(samples[line++], ret, offset);
                 ret.VectorTable[baseVector + i] = GetVectorForOffset(offset);
                 offset += _lineLength;
             }
 
-            ConvertAllSamples(ret, 0, offset);
+            ConvertAllSamples(samples[0], ret, offset);
             ret.VectorTable[245] = GetVectorForOffset(offset);
             offset += _lineLength;
 
@@ -295,11 +313,11 @@ namespace PhilipsPatternRom.Converter
             return ret;
         }
 
-        private void ConvertAllSamples(ConvertedComponents components, int line, int offset)
+        private void ConvertAllSamples(LineSamples samples, ConvertedComponents components, int offset)
         {
-            components.SamplesY.AddRange(BuildSamples(PatternType.Luma, line, offset));
-            components.SamplesRy.AddRange(BuildSamples(PatternType.RminusY, line, offset));
-            components.SamplesBy.AddRange(BuildSamples(PatternType.BminusY, line, offset));
+            components.SamplesY.AddRange(BuildSamples(samples, PatternType.Luma, offset));
+            components.SamplesRy.AddRange(BuildSamples(samples, PatternType.RminusY, offset));
+            components.SamplesBy.AddRange(BuildSamples(samples, PatternType.BminusY, offset));
         }
 
         private void GenerateBlankLine(ConvertedComponents components, int offset)
@@ -309,7 +327,7 @@ namespace PhilipsPatternRom.Converter
             components.SamplesBy.AddRange(Enumerable.Repeat(128, 512));
         }
 
-        private List<int> BuildSamples(PatternType type, int line, int offset)
+        private List<int> BuildSamples(LineSamples samples, PatternType type, int offset)
         {
             var lineSamples = new List<int>();
             int totalSize = 0;
@@ -364,8 +382,6 @@ namespace PhilipsPatternRom.Converter
             }
 
 
-            var lineStart = (line * lineLength);
-
             // Splice new samples with HSync+Colour burst from old pattern
 
             for (int i = newPatternStartOffset; i < (maxBackAndCentreSamples + newPatternStartOffset); i++)
@@ -373,13 +389,13 @@ namespace PhilipsPatternRom.Converter
                 switch (type)
                 {
                     case PatternType.Luma:
-                        lineSamples.Add(AdjustLuma(_ySamples[lineStart + i]));
+                        lineSamples.Add(AdjustLuma(samples.SamplesY[i]));
                         break;
                     case PatternType.RminusY:
-                        lineSamples.Add(AdjustChroma(PatternType.RminusY, _rySamples[lineStart + i]));
+                        lineSamples.Add(AdjustChroma(PatternType.RminusY, samples.SamplesRy[i]));
                         break;
                     case PatternType.BminusY:
-                        lineSamples.Add(AdjustChroma(PatternType.BminusY, _bySamples[lineStart + i]));
+                        lineSamples.Add(AdjustChroma(PatternType.BminusY, samples.SamplesBy[i]));
                         break;
                 }
             }
@@ -498,30 +514,28 @@ namespace PhilipsPatternRom.Converter
             return new Tuple<byte, byte, byte>(sequence, msa, msa);
         }
 
-        private void ApplyPatternFixes(PatternFixType fixes)
+        private void ApplyPatternFixes(PatternSamples samples, PatternFixType fixes)
         {
             if ((fixes & PatternFixType.FixDigCircle16x9Clock) == PatternFixType.FixDigCircle16x9Clock)
-                FixDigCircle16x9Clock();
+                FixDigCircle16x9Clock(samples);
 
             if ((fixes & PatternFixType.FixDigCircle16x9BottomBox) == PatternFixType.FixDigCircle16x9BottomBox)
-                FixDigCircle16x9BottomBox();
+                FixDigCircle16x9BottomBox(samples);
 
             if ((fixes & PatternFixType.FixDigCircle16x9Ap) == PatternFixType.FixDigCircle16x9Ap)
-                FixDigCircle16x9Ap();
+                FixDigCircle16x9Ap(samples);
 
             if ((fixes & PatternFixType.FixDigFubk16x9Centre) == PatternFixType.FixDigFubk16x9Centre)
-                FixDigFubk16x9Centre();
+                FixDigFubk16x9Centre(samples);
 
             if ((fixes & PatternFixType.FixAlgFubk16x9LowerIdBoxes) == PatternFixType.FixAlgFubk16x9LowerIdBoxes)
-                FixAlgFubk16x9LowerIdBoxes();
+                FixAlgFubk16x9LowerIdBoxes(samples);
         }
 
-        private void FixDigCircle16x9Clock()
+        private void FixDigCircle16x9Clock(PatternSamples samples)
         {
             if (!_useDigitalFactors)
                 throw new Exception("This fix is for digital patterns only");
-
-            var totalLines = _rySamples.Count / _lineLength / 2;
 
             // Samples for centre without clock cut-out. Extracted from the GREY10 version of the pattern.
             ushort[] centreWithClock = { 64, 97, 495, 902, 825, 358, 65, 64, 64, 64, 64, 64,
@@ -544,11 +558,11 @@ namespace PhilipsPatternRom.Converter
                     286, 766, 927, 575, 134, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
                     64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 65, 358, 825, 902, 495, 97, 64 };
 
-            FixDigCircle16x9Clock(centreWithClock, 0);
-            FixDigCircle16x9Clock(centreWithClock, totalLines);
+            FixDigCircle16x9Clock(samples.Frame0, centreWithClock);
+            FixDigCircle16x9Clock(samples.Frame1, centreWithClock);
         }
 
-        private void FixDigCircle16x9Clock(ushort[] centreWithClock, int startLine)
+        private void FixDigCircle16x9Clock(List<LineSamples> samples, ushort[] centreWithClock)
         {
             if (!_useDigitalFactors)
                 throw new Exception("This fix is for digital patterns only");
@@ -556,46 +570,42 @@ namespace PhilipsPatternRom.Converter
             for (int line = 268; line < 287; line++)
             {
                 for (int i = 0; i < centreWithClock.Length; i++)
-                    _ySamples[((line + startLine) * _lineLength) + 340 + i] = centreWithClock[i];
+                    samples[line].SamplesY[340 + i] = centreWithClock[i];
             }
 
             // Most central two lines without clock cut-out
             for (int line = 287; line < 289; line++)
             {
                 for (int i = 0; i < centreWithClock.Length; i++)
-                    _ySamples[((line + startLine) * _lineLength) + 340 + i] = 940; // Solid white
+                    samples[line].SamplesY[340 + i] = 940;
             }
 
             for (int line = 289; line < 308; line++)
             {
                 for (int i = 0; i < centreWithClock.Length; i++)
-                    _ySamples[((line + startLine) * _lineLength) + 340 + i] = centreWithClock[i];
+                    samples[line].SamplesY[340 + i] = centreWithClock[i];
             }
         }
 
-        private void FixDigCircle16x9BottomBox()
+        private void FixDigCircle16x9BottomBox(PatternSamples samples)
         {
             if (!_useDigitalFactors)
                 throw new Exception("This fix is for digital patterns only");
 
-            var totalLines = _rySamples.Count / _lineLength / 2;
-
             for (var line = 434; line < 476; line++)
             {
                 for (int i = 0; i < 8; i++)
-                    _ySamples[(line * _lineLength) + i + 427] = 64;
-            }
-
-            for (var line = 434; line < 476; line++)
-            {
-                for (int i = 0; i < 8; i++)
-                    _ySamples[((line + totalLines) * _lineLength) + i + 427] = 64;
+                {
+                    samples.Frame0[line].SamplesY[i + 427] = 64;
+                    if (samples.Frame1 != null)
+                        samples.Frame1[line].SamplesY[i + 427] = 64;
+                }
             }
         }
 
-        private void FixDigCircle16x9Ap()
+        private void FixDigCircle16x9Ap(PatternSamples samples)
         {
-            // The PT5300 patterns use a compromise anti-PAL arrangement where the phase
+            // The PT5300/PT8633 patterns use a compromise anti-PAL arrangement where the phase
             // is swapped on each alternating frame, rather than each alternating field
             // which doesn't upset digital transmissions but roughly does the same thing
             // for analogue. But it's just not as good as true analogue anti-PAL so
@@ -605,31 +615,28 @@ namespace PhilipsPatternRom.Converter
             if (!_useDigitalFactors)
                 throw new Exception("This fix is for digital patterns only");
 
-            var totalLines = _rySamples.Count / _lineLength / 2;
             var originalLineToPreserve = 202;
             var stripeLength = 36;
             var stripeStartRy = 168;
             var stripeStartBy = 802;
             ushort zeroValue = 512;
 
-            var originalRyStripePlus = _rySamples.Skip((originalLineToPreserve * _lineLength) + stripeStartRy).Take(stripeLength).ToList();
-            var originalRyStripeMinus = _rySamples.Skip(((totalLines + originalLineToPreserve) * _lineLength) + stripeStartRy).Take(stripeLength).ToList();
+            var originalRyStripePlus = samples.Frame0[originalLineToPreserve].SamplesRy.Skip(stripeStartRy).Take(stripeLength).ToList();
+            var originalRyStripeMinus = samples.Frame1[originalLineToPreserve].SamplesRy.Skip(stripeStartRy).Take(stripeLength).ToList();
 
-            var originalByStripePlus = _bySamples.Skip((originalLineToPreserve * _lineLength) + stripeStartBy).Take(stripeLength).ToList();
-            var originalByStripeMinus = _bySamples.Skip(((totalLines + originalLineToPreserve) * _lineLength) + stripeStartBy).Take(stripeLength).ToList();
+            var originalByStripePlus = samples.Frame0[originalLineToPreserve].SamplesBy.Skip(stripeStartBy).Take(stripeLength).ToList();
+            var originalByStripeMinus = samples.Frame1[originalLineToPreserve].SamplesBy.Skip(stripeStartBy).Take(stripeLength).ToList();
 
-            // Odd field
-            PatchAntiPal(_rySamples, 0, stripeStartRy, originalRyStripePlus, originalRyStripeMinus);
-            PatchAntiPal(_bySamples, 0, stripeStartBy, originalByStripePlus, originalByStripeMinus);
-            // Even field
-            PatchAntiPal(_rySamples, 576, stripeStartRy, originalRyStripeMinus, originalRyStripePlus);
-            PatchAntiPal(_bySamples, 576, stripeStartBy, originalByStripeMinus, originalByStripePlus);
+            PatchAntiPal(samples.Frame0, stripeStartRy, stripeStartBy, originalRyStripePlus, originalByStripePlus, originalRyStripeMinus, originalByStripeMinus);
+            PatchAntiPal(samples.Frame1, stripeStartRy, stripeStartBy, originalRyStripeMinus, originalByStripeMinus, originalRyStripePlus, originalByStripePlus);
         }
 
-        private void PatchAntiPal(List<ushort> set, int startLine, int stripeStart, List<ushort> originalSamplesPlus, List<ushort> originalSamplesMinus)
+        private void PatchAntiPal(List<LineSamples> set, int stripeStartRy, int stripeStartBy,
+            List<ushort> originalRyStripeMinus, List<ushort> originalByStripeMinus,
+            List<ushort> originalRyStripePlus, List<ushort> originalByStripePlus)
         {
             var totalLines = set.Count / _lineLength / 2;
-            var originalLineToPreserve = 202 + startLine;
+            var originalLineToPreserve = 202;
             var stripeLength = 36;
             ushort zeroValue = 512;
 
@@ -654,7 +661,10 @@ namespace PhilipsPatternRom.Converter
                 })
             {
                 for (int i = 0; i < stripeLength; i++)
-                    set[((startLine + line) * _lineLength) + stripeStart + i] = zeroValue;
+                {
+                    set[line].SamplesRy[stripeStartRy + i] = zeroValue;
+                    set[line].SamplesBy[stripeStartBy + i] = zeroValue;
+                }
             }
 
             // Re-add plus stripes
@@ -678,7 +688,10 @@ namespace PhilipsPatternRom.Converter
                 })
             {
                 for (int i = 0; i < stripeLength; i++)
-                    set[((startLine + line) * _lineLength) + stripeStart + i] = originalSamplesPlus[i];
+                {
+                    set[line].SamplesRy[stripeStartRy + i] = originalRyStripePlus[i];
+                    set[line].SamplesBy[stripeStartBy + i] = originalByStripePlus[i];
+                }
             }
 
             // Re-add minus stripes
@@ -702,35 +715,38 @@ namespace PhilipsPatternRom.Converter
                 })
             {
                 for (int i = 0; i < stripeLength; i++)
-                    set[((startLine + line) * _lineLength) + stripeStart + i] = originalSamplesMinus[i];
+                {
+                    set[line].SamplesRy[stripeStartRy + i] = originalRyStripeMinus[i];
+                    set[line].SamplesBy[stripeStartBy + i] = originalByStripeMinus[i];
+                }
             }
         }
 
-        private void FixDigFubk16x9Centre()
+        private void FixDigFubk16x9Centre(PatternSamples samples)
         {
             var originalLineToPreserve = 288;
             var stripeLength = 9;
             var stripeStart = 498;
 
-            var originalStripe = _ySamples.Skip((originalLineToPreserve * _lineLength) + stripeStart).Take(stripeLength).ToList();
+            var originalStripe = samples.Frame0[originalLineToPreserve].SamplesY.Skip(stripeStart).Take(stripeLength).ToList();
 
             foreach (var line in new[] { 288, 289, 290, 324, 325, 326 })
             {
                 for (int i = 0; i < 8; i++)
                 {
-                    _ySamples[((line) * _lineLength) + i + 490] = 64;
-                    _ySamples[((line) * _lineLength) + i + 515] = 64;
+                    samples.Frame0[line].SamplesY[i + 490] = 64;
+                    samples.Frame0[line].SamplesY[i + 515] = 64;
                 }
             }
 
             for (int line = 288; line < 327; line++)
             {
                 for (int i = 0; i < stripeLength; i++)
-                    _ySamples[(line * _lineLength) + stripeStart + i] = originalStripe[i];
+                    samples.Frame0[line].SamplesY[stripeStart + i] = originalStripe[i];
             }
         }
 
-        private void FixAlgFubk16x9LowerIdBoxes()
+        private void FixAlgFubk16x9LowerIdBoxes(PatternSamples samples)
         {
             // Remove station ID boxes. Data taken from non-AntiPAL pattern.
 
@@ -782,13 +798,10 @@ namespace PhilipsPatternRom.Converter
             for (int line = 0; line < 38; line++)
             {
                 for (int i = 0; i < 494; i++)
-                    _ySamples[((line + 488) * _lineLength) + i + 256] = (ushort)fixedSamples[line, i];
-            }
-
-            for (int line = 0; line < 38; line++)
-            {
-                for (int i = 0; i < 494; i++)
-                    _ySamples[((line + 488 + 576) * _lineLength) + i + 256] = (ushort)fixedSamples[line, i];
+                {
+                    samples.Frame0[line + 488].SamplesY[i + 256] = (ushort)fixedSamples[line, i];
+                    samples.Frame1[line + 488].SamplesY[i + 256] = (ushort)fixedSamples[line, i];
+                }
             }
         }
     }

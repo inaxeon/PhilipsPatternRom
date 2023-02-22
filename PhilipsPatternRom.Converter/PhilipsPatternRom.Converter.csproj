@@ -48,10 +48,12 @@
     <Compile Include="Models\GeneratorStandard.cs" />
     <Compile Include="Models\GeneratorType.cs" />
     <Compile Include="Models\InputPattern.cs" />
+    <Compile Include="Models\LineSamples.cs" />
     <Compile Include="Models\PatternComponents.cs" />
     <Compile Include="Models\PatternData.cs" />
     <Compile Include="Models\PatternFixType.cs" />
     <Compile Include="Models\PatternFragment.cs" />
+    <Compile Include="Models\PatternSamples.cs" />
     <Compile Include="Models\PatternSubType.cs" />
     <Compile Include="Models\PatternType.cs" />
     <Compile Include="Models\Stripe.cs" />

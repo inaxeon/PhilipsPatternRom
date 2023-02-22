@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
-    <StartArguments>/Generator Pm5644g00MultiPattern /InROMs "N:\Electronics\Analog TV\PM5644\PM5644G00_Modified" /RenderPattern /InputPatternIndex 0 /InputPatternFrame 0</StartArguments>
+    <StartArguments>/Generator Pm5644g00 /OutputGenerator Pm5644g00MultiPattern /InROMs "N:\Electronics\Analog TV\PM5644\PM5644G00" /InputPatternIndex 2 /OutputPatternIndex 0 /AddAlgApPattern "C:\Dev\PTV\PT5230\PT8631\TPD\BILLEDDATA\FUBK16X9\ANTIPAL" /FixAlgFubk16x9LowerIdBoxes /AddDigPattern "C:\Dev\PTV\PT5230\PT8633\TPD\BILLEDDATA\Data fra PTV_Brandskab\G\PHIL16X9\TXT_U_AP" /OutROMs "N:\Electronics\Analog TV\PM5644\PM5644G00_Modified"</StartArguments>
   </PropertyGroup>
   <PropertyGroup>
     <PublishUrlHistory />
