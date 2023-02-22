@@ -331,17 +331,20 @@ namespace PhilipsPatternRom.Converter
                 rom.Save();
         }
 
-        public void AppendComponents(List<Tuple<ConvertedComponents, ConvertedComponents, int>> componentsSet, int outputPatternIndex)
+        public void AppendComponents(List<Tuple<ConvertedPattern, ConvertedPattern>> componentsSet, List<LineSamples> lines, int outputPatternIndex)
         {
             var vectorTableEntryCount = VectorTable.Count / 3;
+
+            foreach (var line in lines)
+            {
+                LuminanceSamplesFull.AddRange(line.SamplesY);
+                ChrominanceRySamples.AddRange(line.SamplesRy.Select(el => (byte)el));
+                ChrominanceBySamples.AddRange(line.SamplesBy.Select(el => (byte)el));
+            }
 
             foreach (var components in componentsSet)
             {
                 var vectorTable = new List<byte>();
-
-                LuminanceSamplesFull.AddRange(components.Item1.SamplesY.Select(el => el < 0 ? (ushort)0x3FF : (ushort)el));
-                ChrominanceRySamples.AddRange(components.Item1.SamplesRy.Select(el => el < 0 ? (byte)0xFF : (byte)el));
-                ChrominanceBySamples.AddRange(components.Item1.SamplesBy.Select(el => el < 0 ? (byte)0xFF : (byte)el));
 
                 for (int i = 0; i < (vectorTableEntryCount / (Standard == GeneratorStandard.NTSC ? 1 : 2)); i++)
                 {
@@ -356,10 +359,6 @@ namespace PhilipsPatternRom.Converter
                 {
                     if (components.Item2 != null)
                     {
-                        LuminanceSamplesFull.AddRange(components.Item2.SamplesY.Select(el => el < 0 ? (ushort)0x3FF : (ushort)el));
-                        ChrominanceRySamples.AddRange(components.Item2.SamplesRy.Select(el => el < 0 ? (byte)0xFF : (byte)el));
-                        ChrominanceBySamples.AddRange(components.Item2.SamplesBy.Select(el => el < 0 ? (byte)0xFF : (byte)el));
-
                         for (int i = (vectorTableEntryCount / 2); i < vectorTableEntryCount; i++)
                         {
                             var entry = components.Item2.VectorTable[i];

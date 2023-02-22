@@ -14,7 +14,7 @@ namespace PhilipsPatternRom.Converter.Models
             SamplesRy = samplesRY;
             SamplesBy = samplesBY;
 
-            LineHashCode = SamplesY.GetHashCode() + SamplesRy.GetHashCode() + SamplesBy.GetHashCode();
+            UpdateHash();
         }
 
         public List<ushort> SamplesY { get; set; }
@@ -37,7 +37,27 @@ namespace PhilipsPatternRom.Converter.Models
             for (int i = 0; i < byCopy.Count; i += 2)
                 SamplesBy.Add((ushort)((byCopy[i] + byCopy[i + 1]) / 2));
 
-            LineHashCode = SamplesY.GetHashCode() + SamplesRy.GetHashCode() + SamplesBy.GetHashCode();
+            UpdateHash();
+        }
+
+        private void UpdateHash()
+        {
+            int hash = SamplesY.Count;
+
+            foreach (int sample in SamplesY)
+                hash = unchecked(hash * 314159 + sample);
+
+            LineHashCode = hash;
+
+            foreach (int sample in SamplesRy)
+                hash = unchecked(hash * 314160 + sample);
+
+            LineHashCode += hash;
+
+            foreach (int sample in SamplesBy)
+                hash = unchecked(hash * 314161 + sample);
+
+            LineHashCode += hash;
         }
     }
 }

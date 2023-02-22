@@ -51,6 +51,7 @@
     <Compile Include="Models\LineSamples.cs" />
     <Compile Include="Models\PatternComponents.cs" />
     <Compile Include="Models\PatternData.cs" />
+    <Compile Include="Models\PatternFixes.cs" />
     <Compile Include="Models\PatternFixType.cs" />
     <Compile Include="Models\PatternFragment.cs" />
     <Compile Include="Models\PatternSamples.cs" />
