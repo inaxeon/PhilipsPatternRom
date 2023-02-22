@@ -28,6 +28,10 @@ namespace PhilipsPatternRom.Converter.Models
                 FixAlgFubk16x9LowerIdBoxes(samples);
         }
 
+        /// <summary>
+        /// Remove the clock cut-out from the PT8633 Anti-PAL 16x9 circle pattern
+        /// </summary>
+        /// <param name="samples"></param>
         private static void FixDigCircle16x9Clock(PatternSamples samples)
         {
             if (!samples.IsDigital)
@@ -80,6 +84,11 @@ namespace PhilipsPatternRom.Converter.Models
             }
         }
 
+        /// <summary>
+        /// Remove the reflection check from PT8633 Anti-PAL 16x9 circle pattern
+        /// To make it a bit more PM5644 like
+        /// </summary>
+        /// <param name="samples"></param>
         private static void FixDigCircle16x9BottomBox(PatternSamples samples)
         {
             if (!samples.IsDigital)
@@ -96,15 +105,19 @@ namespace PhilipsPatternRom.Converter.Models
             }
         }
 
+        /// <summary>
+        /// The PT5300/PT8633 patterns use a compromise anti-PAL arrangement where the phase
+        /// is swapped on each alternating frame, rather than each alternating field
+        /// which doesn't upset digital transmissions but roughly does the same thing
+        /// for analogue. But it's just not as good as true analogue anti-PAL so
+        /// this fixes it up by re-arranging the samples accordingly. The result
+        /// is equivalent to the G/924's pattern.
+        /// 
+        /// This is only for the 16x9 PAL circle pattern
+        /// </summary>
+        /// <param name="samples"></param>
         private static void FixDigCircle16x9Ap(PatternSamples samples)
         {
-            // The PT5300/PT8633 patterns use a compromise anti-PAL arrangement where the phase
-            // is swapped on each alternating frame, rather than each alternating field
-            // which doesn't upset digital transmissions but roughly does the same thing
-            // for analogue. But it's just not as good as true analogue anti-PAL so
-            // this fixes it up by re-arranging the samples accordingly. The result
-            // is equivalent to the G/924's pattern.
-
             if (!samples.IsDigital)
                 throw new Exception("This fix is for digital patterns only");
 
@@ -215,6 +228,10 @@ namespace PhilipsPatternRom.Converter.Models
             }
         }
 
+        /// <summary>
+        /// Replace the PT8633 16x9 FuBK 'digital' centre with the traditional type
+        /// </summary>
+        /// <param name="samples"></param>
         private static void FixDigFubk16x9Centre(PatternSamples samples)
         {
             var originalLineToPreserve = 288;
@@ -239,10 +256,13 @@ namespace PhilipsPatternRom.Converter.Models
             }
         }
 
+        /// <summary>
+        /// Remove the station ID boxes from the PT8631 FuBK 16:9 pattern
+        /// Data taken from non-AntiPAL pattern.
+        /// </summary>
+        /// <param name="samples"></param>
         private static void FixAlgFubk16x9LowerIdBoxes(PatternSamples samples)
         {
-            // Remove station ID boxes. Data taken from non-AntiPAL pattern.
-
             if (samples.IsDigital)
                 throw new Exception("This fix is for analogue patterns only");
 

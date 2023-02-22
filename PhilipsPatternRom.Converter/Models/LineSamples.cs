@@ -8,11 +8,12 @@ namespace PhilipsPatternRom.Converter.Models
 {
     public class LineSamples
     {
-        public LineSamples(List<ushort> samplesY, List<ushort> samplesRY, List<ushort> samplesBY)
+        public LineSamples(List<ushort> samplesY, List<ushort> samplesRY, List<ushort> samplesBY, bool calculateHash)
         {
             SamplesY = samplesY;
             SamplesRy = samplesRY;
             SamplesBy = samplesBY;
+            _calculateHash = calculateHash;
 
             UpdateHash();
         }
@@ -22,6 +23,7 @@ namespace PhilipsPatternRom.Converter.Models
         public List<ushort> SamplesBy { get; set; }
 
         public long LineHashCode { get; private set; }
+        private bool _calculateHash { get; set; }
 
         public void Do422Conversion()
         {
@@ -42,6 +44,9 @@ namespace PhilipsPatternRom.Converter.Models
 
         private void UpdateHash()
         {
+            if (!_calculateHash)
+                return;
+
             int hash = SamplesY.Count;
 
             foreach (int sample in SamplesY)

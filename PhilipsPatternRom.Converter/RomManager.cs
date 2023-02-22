@@ -355,10 +355,13 @@ namespace PhilipsPatternRom.Converter
                     vectorTable.Add(entry.Item3);
                 }
 
+                // NTSC version has no anti-PAL, so each pattern only has one frame.
+                // The vector table is only half as long.
                 if (Standard != GeneratorStandard.NTSC)
                 {
                     if (components.Item2 != null)
                     {
+                        // anti-PAL pattern supplied. Copy in its vector table
                         for (int i = (vectorTableEntryCount / 2); i < vectorTableEntryCount; i++)
                         {
                             var entry = components.Item2.VectorTable[i];
@@ -370,6 +373,7 @@ namespace PhilipsPatternRom.Converter
                     }
                     else
                     {
+                        // non anti-PAL pattern. Duplicate the first (only) vector table
                         for (int i = 0; i < (vectorTableEntryCount / 2); i++)
                         {
                             var entry = components.Item1.VectorTable[i];

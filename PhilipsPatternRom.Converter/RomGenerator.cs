@@ -38,15 +38,12 @@ namespace PhilipsPatternRom.Converter
             _romManager = new RomManager();
         }
 
-        private void LoadSourceVectors()
-        {
-            _sourceVectorEntries = Utility.LoadVectors(_romManager, _romManager.Standard);
-            _linesPerField = _sourceVectorEntries.Count / 2;
-
-            if (_romManager.Standard == GeneratorStandard.PAL || _romManager.Standard == GeneratorStandard.PAL_M)
-                _linesPerField /= 2;
-        }
-
+        /// <summary>
+        /// Add an anti-PAL pattern (2 frames)
+        /// </summary>
+        /// <param name="directory"></param>
+        /// <param name="useDigitalFactors">True for PT8633 patterns. False for PT8631 patterns</param>
+        /// <param name="fixes"></param>
         public void AddAntiPal(string directory, bool useDigitalFactors, PatternFixType fixes)
         {
             if (_romManager.Standard == GeneratorStandard.NTSC)
@@ -69,6 +66,12 @@ namespace PhilipsPatternRom.Converter
             _convertedComponents.Add(new Tuple<ConvertedPattern, ConvertedPattern>(ap1, ap2));
         }
 
+        /// <summary>
+        /// Add a non anti-PAL pattern (1 frame)
+        /// </summary>
+        /// <param name="directory"></param>
+        /// <param name="useDigitalFactors">True for PT8633 patterns. False for PT8631 patterns</param>
+        /// <param name="fixes"></param>
         public void AddRegular(string directory, bool useDigitalFactors, PatternFixType fixes)
         {
             var patternSamples = new PatternSamples { IsDigital = useDigitalFactors };
@@ -102,6 +105,11 @@ namespace PhilipsPatternRom.Converter
             _convertedComponents.Add(new Tuple<ConvertedPattern, ConvertedPattern>(ap1, null));
         }
 
+        /// <summary>
+        /// Save the modified ROMs to a new set
+        /// </summary>
+        /// <param name="directory"></param>
+        /// <param name="outputPatternIndex"></param>
         public void Save(string directory, int outputPatternIndex)
         {
             _romManager.SetFilenamesAndSize(_outputType);
@@ -133,6 +141,24 @@ namespace PhilipsPatternRom.Converter
             _existingByBackPorchSamples = _romManager.ChrominanceBySamples.Skip(addr).Take(64).ToList();
         }
 
+        /// <summary>
+        /// Load the PM5644's original vector table. Don't really need it for much other than to 
+        /// steal a few samples
+        /// </summary>
+        private void LoadSourceVectors()
+        {
+            _sourceVectorEntries = Utility.LoadVectors(_romManager, _romManager.Standard);
+            _linesPerField = _sourceVectorEntries.Count / 2;
+
+            if (_romManager.Standard == GeneratorStandard.PAL || _romManager.Standard == GeneratorStandard.PAL_M)
+                _linesPerField /= 2;
+        }
+
+        /// <summary>
+        /// Load the raw samples
+        /// </summary>
+        /// <param name="patternSamples"></param>
+        /// <param name="directory"></param>
         private void LoadSamples(PatternSamples patternSamples, string directory)
         {
             var yChannelFile = Path.Combine(directory, "CHANNEL1.DAT");
@@ -167,7 +193,7 @@ namespace PhilipsPatternRom.Converter
                 for (int i = 0; i < _sourceLines; i++)
                 {
                     var lineSamples = new LineSamples(ySamples.Skip(_lineLength * i).Take(1024).ToList(),
-                        rySamples.Skip(_lineLength * i).Take(1024).ToList(), bySamples.Skip(_lineLength * i).Take(1024).ToList());
+                        rySamples.Skip(_lineLength * i).Take(1024).ToList(), bySamples.Skip(_lineLength * i).Take(1024).ToList(), false);
 
                     patternSamples.Frame0.Add(lineSamples);
                 }
@@ -179,7 +205,7 @@ namespace PhilipsPatternRom.Converter
                 for (int i = _sourceLines; i < (_sourceLines * 2); i++)
                 {
                     var lineSamples = new LineSamples(ySamples.Skip(_lineLength * i).Take(1024).ToList(),
-                        rySamples.Skip(_lineLength * i).Take(1024).ToList(), bySamples.Skip(_lineLength * i).Take(1024).ToList());
+                        rySamples.Skip(_lineLength * i).Take(1024).ToList(), bySamples.Skip(_lineLength * i).Take(1024).ToList(), false);
 
                     patternSamples.Frame1.Add(lineSamples);
                 }
@@ -191,6 +217,15 @@ namespace PhilipsPatternRom.Converter
             }
         }
 
+        /// <summary>
+        /// 625 line pattern assembler.
+        /// Source patterns don't convert directly to PM5644 patterns as there's more visible lines (580)
+        /// outputted than are in the source pattern which only has 576 lines. These are extra lines of
+        /// top/bottom border castellation, which are all the same, so just duplicate them.
+        /// </summary>
+        /// <param name="samples"></param>
+        /// <param name="baseVector"></param>
+        /// <returns></returns>
         private ConvertedPattern ConvertPatternPal(List<LineSamples> samples, int baseVector)
         {
             var ret = new ConvertedPattern
@@ -202,7 +237,7 @@ namespace PhilipsPatternRom.Converter
             int line = 0;
             int offset;
 
-            // Right side castellation
+            // Right side (first line) castellation
             offset = ConvertAllSamples(samples[line++]);
             ret.VectorTable[baseVector] = GetVectorForOffset(offset);
 
@@ -228,11 +263,13 @@ namespace PhilipsPatternRom.Converter
             // Skip the second to last line. Only want the last line.
             line++;
 
-            // Left side castellation
+            // Left side (last line) castellation
             offset = ConvertAllSamples(samples[line++]);
             ret.VectorTable[baseVector + 291] = GetVectorForOffset(offset);
 
             // Extra full lines of border castellation not all of which are in the source pattern
+            // Arbitrarily mapped back to the first line which is a complete line of castellation
+            // The compressor will map all of these to the same line anyhow.
             ret.VectorTable[baseVector + 286] = ret.VectorTable[baseVector + 1];
             ret.VectorTable[baseVector + 287] = ret.VectorTable[baseVector + 1];
             ret.VectorTable[baseVector + 288] = ret.VectorTable[baseVector + 1];
@@ -246,6 +283,12 @@ namespace PhilipsPatternRom.Converter
             return ret;
         }
 
+        /// <summary>
+        /// 525 line pattern assembler
+        /// </summary>
+        /// <param name="samples"></param>
+        /// <param name="baseVector"></param>
+        /// <returns></returns>
         private ConvertedPattern ConvertPatternNtsc(List<LineSamples> samples, int baseVector)
         {
             var ret = new ConvertedPattern
@@ -256,7 +299,6 @@ namespace PhilipsPatternRom.Converter
             int i = 0;
             int line = 0;
             int offset;
-
 
             offset = ConvertAllSamples(samples[1]);
             ret.VectorTable[0] = GetVectorForOffset(offset);
@@ -291,6 +333,13 @@ namespace PhilipsPatternRom.Converter
             return ret;
         }
 
+        /// <summary>
+        /// Compresses the pattern. If there is already a line exactly the same as the one
+        /// supplied in the samples parameter. Don't re-add it. Just return the address
+        /// to the one that's already there.
+        /// </summary>
+        /// <param name="samples"></param>
+        /// <returns></returns>
         private int StoreLineAndGetOffset(LineSamples samples)
         {
             var existing = _patternLineSamples.SingleOrDefault(el => el.LineHashCode == samples.LineHashCode);
@@ -304,14 +353,21 @@ namespace PhilipsPatternRom.Converter
 
         private int ConvertAllSamples(LineSamples samples)
         {
-            return StoreLineAndGetOffset(new LineSamples(BuildSamples(samples, PatternType.Luma), BuildSamples(samples, PatternType.RminusY), BuildSamples(samples, PatternType.BminusY)));
+            return StoreLineAndGetOffset(new LineSamples(BuildSamples(samples, PatternType.Luma), BuildSamples(samples, PatternType.RminusY), BuildSamples(samples, PatternType.BminusY), true));
         }
 
         private int GenerateBlankLine()
         {
-            return StoreLineAndGetOffset(new LineSamples(Enumerable.Repeat((ushort)724, 1024).ToList(), Enumerable.Repeat((ushort)128, 512).ToList(), Enumerable.Repeat((ushort)128, 512).ToList()));
+            return StoreLineAndGetOffset(new LineSamples(Enumerable.Repeat((ushort)724, 1024).ToList(), Enumerable.Repeat((ushort)128, 512).ToList(), Enumerable.Repeat((ushort)128, 512).ToList(), true));
         }
 
+        /// <summary>
+        /// Splices the lines from the source pattern with hsync/colour burst samples pinched from the PM5644's factory pattern
+        /// Re-arrange the samples as per vector '2' (which allows all samples on a line to be unique)
+        /// </summary>
+        /// <param name="samples"></param>
+        /// <param name="type"></param>
+        /// <returns></returns>
         private List<ushort> BuildSamples(LineSamples samples, PatternType type)
         {
             var lineSamples = new List<ushort>();
@@ -367,7 +423,6 @@ namespace PhilipsPatternRom.Converter
 
 
             // Splice new samples with HSync+Colour burst from old pattern
-
             for (int i = newPatternStartOffset; i < (maxBackAndCentreSamples + newPatternStartOffset); i++)
             {
                 switch (type)
@@ -395,6 +450,12 @@ namespace PhilipsPatternRom.Converter
             return finalSamples;
         }
 
+        /// <summary>
+        /// Recalculate the source luma samples into PM5644 format
+        /// Values were calculated by observation of the G/00's ROMs which are correct
+        /// </summary>
+        /// <param name="source"></param>
+        /// <returns></returns>
         private ushort AdjustLuma(ushort source)
         {
             int sourceAdjusted = source;
@@ -435,6 +496,14 @@ namespace PhilipsPatternRom.Converter
             return (ushort)Math.Round(adjusted, 0);
         }
 
+
+        /// <summary>
+        /// Recalculate the source luma samples into PM5644 format
+        /// Values were calculated by observation of the G/00's ROMs which are correct
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="source"></param>
+        /// <returns></returns>
         private ushort AdjustChroma(PatternType type, ushort source)
         {
             // Old RY:
@@ -479,6 +548,12 @@ namespace PhilipsPatternRom.Converter
             return (ushort)Math.Round(adjusted, 0);
         }
 
+        /// <summary>
+        /// Generate a PM5644 vector for the specified offset
+        /// This was worked out by reverse engineering the logic in the PALs
+        /// </summary>
+        /// <param name="offset"></param>
+        /// <returns></returns>
         private Tuple<byte, byte, byte> GetVectorForOffset(int offset)
         {
             int trueOffset = offset / 4;
