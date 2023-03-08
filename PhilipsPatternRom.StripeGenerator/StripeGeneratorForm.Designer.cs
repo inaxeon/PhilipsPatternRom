@@ -78,9 +78,9 @@
             this.ddlGeneratorType.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.ddlGeneratorType.FormattingEnabled = true;
             this.ddlGeneratorType.Items.AddRange(new object[] {
+            "Please select",
             "PM5644G/00",
-            "PM5644M/00",
-            "PM5644G/913"});
+            "PM5644G/Multi"});
             this.ddlGeneratorType.Location = new System.Drawing.Point(11, 732);
             this.ddlGeneratorType.Name = "ddlGeneratorType";
             this.ddlGeneratorType.Size = new System.Drawing.Size(141, 21);

@@ -22,8 +22,12 @@ namespace PhilipsPatternRom.Converter
         private int _romSize { get; set; }
 
         public int RomSize {  get { return _romSize; } }
+        public int PatternDataStart { get { return _patternDataStart; } }
 
         private List<RomPart> _set;
+        bool _clearExisting;
+        private GeneratorType _type;
+        private int _patternDataStart;
         private int _vectorTableStart;
         private int _vectorTableLength;
 
@@ -42,6 +46,7 @@ namespace PhilipsPatternRom.Converter
             {
                 Type = GeneratorType.Pm5644g00,
                 Standard = GeneratorStandard.PAL,
+                PatternDataStart = 0x500,
                 VectorTableStart = 0x52F6,
                 VectorTableLength = 0xD98,
                 RomParts = new List<RomPart>
@@ -62,6 +67,7 @@ namespace PhilipsPatternRom.Converter
             {
                 Type = GeneratorType.Pm5644g00MultiPattern,
                 Standard = GeneratorStandard.PAL,
+                PatternDataStart = 0x500,
                 VectorTableStart = 0x52F6,
                 VectorTableLength = 0xD98,
                 RomParts = new List<RomPart>
@@ -180,7 +186,7 @@ namespace PhilipsPatternRom.Converter
             },
         };
 
-        public void OpenSet(GeneratorType type, string directory, int vectorTableIndex)
+        public void OpenSet(GeneratorType type, string directory, bool clearExisting, int vectorTableIndex)
         {
             Directory.SetCurrentDirectory(directory);
 
@@ -189,7 +195,10 @@ namespace PhilipsPatternRom.Converter
             ChrominanceBySamples.Clear();
 
             var generator = _generators.Single(g => g.Type == type);
+            _clearExisting = clearExisting;
             _set = generator.RomParts;
+            _type = type;
+            _patternDataStart = generator.PatternDataStart;
             _vectorTableStart = generator.VectorTableStart;
             _vectorTableLength = generator.VectorTableLength;
 
@@ -250,6 +259,37 @@ namespace PhilipsPatternRom.Converter
 
             VectorTable = _set.Single(el => el.Type == RomType.CPU).Data.Skip(_vectorTableStart +
                 (_vectorTableLength * vectorTableIndex)).Take(_vectorTableLength).ToList();
+
+            ApplySourceFixes();
+        }
+
+        public void ApplySourceFixes()
+        {
+            if (_type == GeneratorType.Pm5644g00)
+            {
+                // Remove the "blip" at the right side of the circle.
+                // It was probably put there for a good reason but it looks ugly
+                // and does not appear in later versions of the pattern.
+                ChrominanceRySamples[(0x5E70 * 2) - 1] = 0x8A;
+                ChrominanceRySamples[0x5EF0 * 2] = 0x8A;
+                ChrominanceRySamples[0x5F70 * 2] = 0x8A;
+                ChrominanceRySamples[0x5FF0 * 2] = 0x8A;
+                ChrominanceRySamples[0x6070 * 2] = 0x8A;
+                ChrominanceRySamples[0x60F0 * 2] = 0x8A;
+
+                // Reinstate the bottom box reflection check
+                var pulse = new ushort[] { 724, 636, 367, 174, 244, 510, 712, 724 };
+                var lines = new[] { 141454, 163982, 164494, 165006, 165518, 166030, 166542, 167054, 167566,
+                168078, 168590, 169102, 169614, 170126, 170638, 171150, 171662, 172174, 172686, 173710,
+                173198, 131726, 174222, 174734, 175246, 175758, 176270, 176782, 177294, 177806, 178318,
+                178830, 179342, 179854, 180366, 180878, 181390, 181902, 182414, 182926 };
+
+                foreach (var line in lines)
+                {
+                    for (int i = 0; i < pulse.Length; i++)
+                        LuminanceSamplesFull[line + i] = pulse[i];
+                }
+            }
         }
 
         public void SetFilenamesAndSize(GeneratorType type)
@@ -264,6 +304,11 @@ namespace PhilipsPatternRom.Converter
         public void SaveSet(string directory)
         {
             var romLength = LuminanceSamplesFull.Count / 4;
+
+            if (romLength > _romSize)
+            {
+                throw new Exception("Too much pattern data");
+            }
 
             _set.Single(el => el.Type == RomType.Luminance0).Data = Enumerable.Repeat((byte)0xFF, _romSize).ToArray();
             _set.Single(el => el.Type == RomType.Luminance1).Data = Enumerable.Repeat((byte)0xFF, _romSize).ToArray();
@@ -334,6 +379,13 @@ namespace PhilipsPatternRom.Converter
         public void AppendComponents(List<Tuple<ConvertedPattern, ConvertedPattern>> componentsSet, List<LineSamples> lines, int outputPatternIndex)
         {
             var vectorTableEntryCount = VectorTable.Count / 3;
+
+            if (_clearExisting)
+            {
+                LuminanceSamplesFull.RemoveRange(_patternDataStart * 4, LuminanceSamplesFull.Count - (_patternDataStart * 4));
+                ChrominanceRySamples.RemoveRange(_patternDataStart * 2, ChrominanceRySamples.Count - (_patternDataStart * 2));
+                ChrominanceBySamples.RemoveRange(_patternDataStart * 2, ChrominanceBySamples.Count - (_patternDataStart * 2));
+            }
 
             foreach (var line in lines)
             {

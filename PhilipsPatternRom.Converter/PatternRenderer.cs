@@ -46,7 +46,7 @@ namespace PhilipsPatternRom.Converter
 
         public void LoadPattern(GeneratorType type, string directory, int patternIndex, bool matchSource)
         {
-            _romManager.OpenSet(type, directory, patternIndex);
+            _romManager.OpenSet(type, directory, false, patternIndex);
             _type = type;
             _matchSource = matchSource;
 
@@ -100,6 +100,19 @@ namespace PhilipsPatternRom.Converter
             _patternData = new PatternData();
 
             components.Luma = GenerateBitmapFromSpriteRomSet(PatternType.Luma, PatternSubType.DeInterlaced, patternFrame);
+
+            if (_stripes != null && _stripes.Count > 0)
+            {
+                components.StripeSet = new StripeSet
+                {
+                    HorizontalStart = _hsMarker.Value,
+                    HorizontalEnd = _heMarker.Value,
+                    VerticalStart = _vsMarker.Value,
+                    VerticalEnd = _veMarker.Value,
+                    Stripes = new List<Stripe>(_stripes)
+                };
+            }
+
             components.ChromaRy = GenerateBitmapFromSpriteRomSet(PatternType.RminusY, PatternSubType.DeInterlaced, patternFrame);
             components.ChromaBy = GenerateBitmapFromSpriteRomSet(PatternType.BminusY, PatternSubType.DeInterlaced, patternFrame);
             components.Standard = _romManager.Standard;
@@ -289,22 +302,6 @@ namespace PhilipsPatternRom.Converter
 
             _vline++;
             _hsample = 0;
-        }
-
-        public StripeSet GetStripeSet()
-        {
-            if (_stripes == null || _stripes.Count == 0)
-                return null;
-
-            //Stripe duplicate;
-            //if (_stripes.HasDuplicate(out duplicate))
-            //    throw new Exception($"Duplicate stripe found on line {duplicate.Line}.");
-
-            var ret = new StripeSet { HorizontalStart = _hsMarker.Value, HorizontalEnd = _heMarker.Value, VerticalStart = _vsMarker.Value, VerticalEnd = _veMarker.Value };
-
-            ret.Stripes = _stripes;
-
-            return ret;
         }
 
         public void DrawPixelsY(Bitmap bitmap, int start, int finish, bool mark)

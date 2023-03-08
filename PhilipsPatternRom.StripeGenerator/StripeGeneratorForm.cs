@@ -17,6 +17,7 @@ namespace PhilipsPatternRom.StripeGenerator
     public partial class StripeGeneratorForm : Form
     {
         private PatternRenderer _renderer;
+        private PatternComponents _components;
         private bool _withClock;
 
         public StripeGeneratorForm()
@@ -46,8 +47,18 @@ namespace PhilipsPatternRom.StripeGenerator
 
         private void LoadPattern()
         {
-            _renderer = new PatternRenderer();
-            _renderer.LoadPattern((Converter.Models.GeneratorType)ddlGeneratorType.SelectedIndex, Properties.Settings.Default.LastOpenDir);
+            if (!Directory.Exists(Properties.Settings.Default.LastOpenDir))
+                return;
+
+            try
+            {
+                _renderer = new PatternRenderer();
+                _renderer.LoadPattern((Converter.Models.GeneratorType)ddlGeneratorType.SelectedIndex, Properties.Settings.Default.LastOpenDir, 0, true);
+            }
+            catch
+            {
+                return;
+            }
 
             Render();
         }
@@ -57,9 +68,9 @@ namespace PhilipsPatternRom.StripeGenerator
             if (_renderer == null)
                 return;
 
-            var bitmap = _renderer.GeneratePatternComponents();
+            _components = _renderer.GeneratePatternComponents(0);
 
-            imgPattern.Image = bitmap.Luma;
+            imgPattern.Image = _components.Luma;
         }
 
         private void ParseAndRender()
@@ -107,7 +118,7 @@ namespace PhilipsPatternRom.StripeGenerator
         {
             try
             {
-                var set = _renderer.GetStripeSet();
+                var set = _components.StripeSet;
 
                 if (set == null)
                     throw new Exception("No stripe set available to save");

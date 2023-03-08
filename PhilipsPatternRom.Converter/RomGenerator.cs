@@ -117,15 +117,15 @@ namespace PhilipsPatternRom.Converter
             _romManager.SaveSet(directory);
         }
 
-        public void Init(GeneratorType type, GeneratorType outputType, string directory, int patternIndex)
+        public void Init(GeneratorType type, GeneratorType outputType, string directory, bool clearExisting, int patternIndex)
         {
             _convertedComponents = new List<Tuple<ConvertedPattern, ConvertedPattern>>();
             _patternLineSamples = new List<LineSamples>();
 
-            _romManager.OpenSet(type, directory, patternIndex);
+            _romManager.OpenSet(type, directory, clearExisting, patternIndex);
             _outputType = outputType;
 
-            _targetOffset = _romManager.RomSize * 4; // Starting offset for new patterns
+            _targetOffset = clearExisting ? _romManager.PatternDataStart * 4 : _romManager.RomSize * 4; // Starting offset for new patterns
 
             LoadSourceVectors();
 

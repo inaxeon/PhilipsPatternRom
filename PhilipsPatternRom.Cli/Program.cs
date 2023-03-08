@@ -13,19 +13,22 @@ namespace PhilipsPatternRom.Cli
 {
     class Program
     {
-        // /Generator Pm5644g00 /OutputGenerator Pm5644g00MultiPattern /InROMs "N:\Electronics\Analog TV\PM5644\PM5644G00" /InputPatternIndex 2 /OutputPatternIndex 0 /AddDigApPattern "C:\Dev\PTV\PT5230\PT8633\TPD\BILLEDDATA\Data fra PTV_Brandskab\G\PHIL16X9\TXT_M_AP" /FixDigCircle16x9Clock /FixDigCircle16x9BottomBox /FixDigCircle16x9Ap /AddDigPattern "C:\Dev\PTV\PT5230\PT8633\TPD\BILLEDDATA\FUBK16X9\U_ANTIPA" /FixDigFubk16x9Centre /OutROMs "N:\Electronics\Analog TV\PM5644\PM5644G00_Modified"
-        // /Generator Pm5644g00 /OutputGenerator Pm5644g00MultiPattern /InROMs "N:\Electronics\Analog TV\PM5644\PM5644G00" /InputPatternIndex 2 /OutputPatternIndex 0 /AddDigApPattern "C:\Dev\PTV\PT5230\PT8633\TPD\BILLEDDATA\Data fra PTV_Brandskab\G\PHIL16X9\TXT_M_AP" /FixDigCircle16x9Clock /FixDigCircle16x9BottomBox /FixDigCircle16x9Ap /AddAlgApPattern "C:\Dev\PTV\PT5230\PT8631\TPD\BILLEDDATA\FUBK16X9\ANTIPAL" /FixAlgFubk16x9LowerIdBoxes /OutROMs "N:\Electronics\Analog TV\PM5644\PM5644G00_Modified"
-        // /Generator Pm5644m00 /InROMs "N:\Electronics\Analog TV\PM5644\PM5644M00" /InputPatternIndex 2 /OutputPatternIndex 0 /AddPattern "C:\Dev\PTV\PT5230\PT8633\TPD\BILLEDDATA\Data fra PTV_Brandskab\M\PHIL16X9\M_TXT" /OutROMs "N:\Electronics\Analog TV\PM5644\PM5644M00_Modified"
-        // /Generator Pm5644g00 /InROMs "N:\Electronics\Analog TV\PM5644\PM5644G00" /RenderPattern /InputPatternIndex 2 /InputPatternFrame 1
-        // /Generator Pm5644g00MultiPattern /InROMs "N:\Electronics\Analog TV\PM5644\PM5644G00_Modified" /RenderPattern /InputPatternIndex 0 /InputPatternFrame 0
-        // /Generator Pm5644m00MultiPattern /InROMs "N:\Electronics\Analog TV\PM5644\PM5644M00_Modified" /RenderPattern /InputPatternIndex 1 /InputPatternFrame 0
-        // /Generator Pm5644g00 /InROMs "N:\Electronics\Analog TV\PM5644\PM5644G00_Modified" /RenderPattern /InputPatternIndex 0
+        // /Generator Pm5644g00 /OutputGenerator Pm5644g00MultiPattern /InROMs "N:\Electronics\TV\PM5644\PM5644G00" /InputPatternIndex 2 /OutputPatternIndex 0 /ClearExisting /AddDigApPattern "C:\Dev\PTV\PT5230\PT8633\TPD\BILLEDDATA\Data fra PTV_Brandskab\G\PHIL4X3\TXT_M_AP" /AddDigApPattern "C:\Dev\PTV\PT5230\PT8633\TPD\BILLEDDATA\Data fra PTV_Brandskab\G\PHIL16X9\TXT_M_AP" /FixDigCircle16x9Clock /FixDigCircle16x9Ap /OutROMs "N:\Electronics\TV\PM5644\PM5644G00_Modified"
+        // /Generator Pm5644g00 /OutputGenerator Pm5644g00MultiPattern /InROMs "N:\Electronics\TV\PM5644\PM5644G00" /InputPatternIndex 2 /OutputPatternIndex 0 /AddDigApPattern "C:\Dev\PTV\PT5230\PT8633\TPD\BILLEDDATA\Data fra PTV_Brandskab\G\PHIL16X9\TXT_M_AP" /FixDigCircle16x9Clock /FixDigCircle16x9Ap /AddAlgApPattern "C:\Dev\PTV\PT5230\PT8631\TPD\BILLEDDATA\FUBK16X9\ANTIPAL" /FixAlgFubk16x9LowerIdBoxes /OutROMs "N:\Electronics\TV\PM5644\PM5644G00_Modified"
+        // /Generator Pm5644m00 /InROMs "N:\Electronics\TV\PM5644\PM5644M00" /InputPatternIndex 2 /OutputPatternIndex 0 /AddPattern "C:\Dev\PTV\PT5230\PT8633\TPD\BILLEDDATA\Data fra PTV_Brandskab\M\PHIL16X9\M_TXT" /OutROMs "N:\Electronics\TV\PM5644\PM5644M00_Modified"
+        // /Generator Pm5644g00 /InROMs "N:\Electronics\TV\PM5644\PM5644G00" /RenderPattern /InputPatternIndex 2 /InputPatternFrame 1
+        // /Generator Pm5644g00MultiPattern /InROMs "N:\Electronics\TV\PM5644\PM5644G00_Modified" /RenderPattern /InputPatternIndex 0 /InputPatternFrame 0
+        // /Generator Pm5644m00MultiPattern /InROMs "N:\Electronics\TV\PM5644\PM5644M00_Modified" /RenderPattern /InputPatternIndex 1 /InputPatternFrame 0
+        // /Generator Pm5644g00 /InROMs "N:\Electronics\TV\PM5644\PM5644G00_Modified" /RenderPattern /InputPatternIndex 0
+
+        // C:\Dev\PhilipsPatternRom\PhilipsPatternRom.Cli\bin\Debug\PhilipsPatternRom.Cli.exe /Generator Pm5644g00MultiPattern /InROMs "N:\Electronics\TV\PM5644\PM5644G00_Modified" /RenderPattern /InputPatternIndex 0 /InputPatternFrame 0
         static void Main(string[] args)
         {
             var patternsToAdd = new List<InputPattern>();
             string inputDir = null;
             string outputDir = null;
             bool matchSource = true;
+            bool clearExisting = false;
             int inputPatternIndex = -1;
             int inputPatternFrame = 0;
             int outputPatternIndex = -1;
@@ -39,6 +42,9 @@ namespace PhilipsPatternRom.Cli
                 {
                     case "/RenderPattern":
                         operation = OperationType.RenderPattern;
+                        break;
+                    case "/ClearExisting":
+                        clearExisting = true;
                         break;
                     case "/AddAlgPattern":
                         operation = OperationType.AddPattern;
@@ -159,19 +165,19 @@ namespace PhilipsPatternRom.Cli
                             Console.Error.WriteLine("Non existent pattern source directory");
                             return;
                         }
-                        AddPatternsToRoms(type, outputType, inputDir, outputDir, inputPatternIndex, outputPatternIndex, patternsToAdd);
+                        AddPatternsToRoms(type, outputType, inputDir, outputDir, clearExisting, inputPatternIndex, outputPatternIndex, patternsToAdd);
                         break;
                     }
 
             }
         }
 
-        static void AddPatternsToRoms(PhilipsPatternRom.Converter.Models.GeneratorType type, PhilipsPatternRom.Converter.Models.GeneratorType outputType, string inputDir, string outputDir, int inputPatternIndex,
+        static void AddPatternsToRoms(PhilipsPatternRom.Converter.Models.GeneratorType type, PhilipsPatternRom.Converter.Models.GeneratorType outputType, string inputDir, string outputDir, bool clearExisting, int inputPatternIndex,
             int outputPatternStartIndex, List<InputPattern> antiPalPatternsToAdd)
         {
             var romGenerator = new RomGenerator();
 
-            romGenerator.Init(type, outputType, inputDir, inputPatternIndex);
+            romGenerator.Init(type, outputType, inputDir, clearExisting, inputPatternIndex);
 
             foreach (var pattern in antiPalPatternsToAdd.Where(el => el.IsAntiPal))
                 romGenerator.AddAntiPal(pattern.Directory, pattern.IsDigital, pattern.Fixes);

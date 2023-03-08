@@ -13,5 +13,7 @@ namespace PhilipsPatternRom.Converter.Models
         public Bitmap Luma { get; set; }
         public Bitmap ChromaRy { get; set; }
         public Bitmap ChromaBy { get; set; }
+        
+        public StripeSet StripeSet { get; set; }
     }
 }
