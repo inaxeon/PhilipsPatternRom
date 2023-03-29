@@ -184,6 +184,22 @@ namespace PhilipsPatternRom.Converter
                     new RomPart(RomType.CPU,            "EPROM_4008_102_59391_CSUM_0D00.BIN", 0, 0x10000),
                 }
             },
+            new Generator
+            {
+                Type = GeneratorType.Pm5644l00,
+                Standard = GeneratorStandard.SECAM,
+                VectorTableStart = 0x568B,
+                VectorTableLength = 0x48A,
+                RomParts = new List<RomPart>
+                {
+                    new RomPart(RomType.Luminance0,     "EPROM_4008_002_01621_CSUM_C923.BIN", 0, 0x80000),
+                    new RomPart(RomType.Luminance1,     "EPROM_4008_002_01631_CSUM_00D6.BIN", 0, 0x80000),
+                    new RomPart(RomType.Luminance2,     "EPROM_4008_002_01641_CSUM_C9D6.BIN", 0, 0x80000),
+                    new RomPart(RomType.Luminance3,     "EPROM_4008_002_01651_CSUM_9C03.BIN", 0, 0x80000),
+                    new RomPart(RomType.LuminanceLSB,   "EPROM_4008_002_01661_CSUM_00E2.BIN", 0, 0x80000),
+                    new RomPart(RomType.CPU,            "EPROM_4008_002_01671_CSUM_CD00.BIN", 0, 0x10000),
+                }
+            },
         };
 
         public void OpenSet(GeneratorType type, string directory, bool clearExisting, int vectorTableIndex)
@@ -201,6 +217,7 @@ namespace PhilipsPatternRom.Converter
             _patternDataStart = generator.PatternDataStart;
             _vectorTableStart = generator.VectorTableStart;
             _vectorTableLength = generator.VectorTableLength;
+            Standard = generator.Standard;
 
             foreach (var rom in _set)
                 rom.Load();
@@ -239,6 +256,12 @@ namespace PhilipsPatternRom.Converter
 
             LuminanceLsbSamples.AddRange(_set.Single(el => el.Type == RomType.LuminanceLSB).Data);
 
+            VectorTable = _set.Single(el => el.Type == RomType.CPU).Data.Skip(_vectorTableStart +
+                (_vectorTableLength * vectorTableIndex)).Take(_vectorTableLength).ToList();
+
+            if (generator.Standard == GeneratorStandard.SECAM)
+                return;
+
             var chromRy0Data = _set.Single(el => el.Type == RomType.ChrominanceRY0).Data;
             var chromRy1Data = _set.Single(el => el.Type == RomType.ChrominanceRY1).Data;
 
@@ -256,9 +279,6 @@ namespace PhilipsPatternRom.Converter
                 ChrominanceBySamples.Add(chromBy0Data[i]);
                 ChrominanceBySamples.Add(chromBy1Data[i]);
             }
-
-            VectorTable = _set.Single(el => el.Type == RomType.CPU).Data.Skip(_vectorTableStart +
-                (_vectorTableLength * vectorTableIndex)).Take(_vectorTableLength).ToList();
 
             ApplySourceFixes();
         }

@@ -54,6 +54,11 @@ namespace PhilipsPatternRom.Converter
 
             switch (_romManager.Standard)
             {
+                case GeneratorStandard.SECAM:
+                    _centreLength = 240;
+                    _frontSpriteLength = 32;
+                    _backSpriteLength = 64;
+                    break;
                 case GeneratorStandard.PAL:
                     _centreLength = 120;
                     _frontSpriteLength = 32;
@@ -113,8 +118,12 @@ namespace PhilipsPatternRom.Converter
                 };
             }
 
-            components.ChromaRy = GenerateBitmapFromSpriteRomSet(PatternType.RminusY, PatternSubType.DeInterlaced, patternFrame);
-            components.ChromaBy = GenerateBitmapFromSpriteRomSet(PatternType.BminusY, PatternSubType.DeInterlaced, patternFrame);
+            if (_romManager.Standard != GeneratorStandard.SECAM)
+            {
+                components.ChromaRy = GenerateBitmapFromSpriteRomSet(PatternType.RminusY, PatternSubType.DeInterlaced, patternFrame);
+                components.ChromaBy = GenerateBitmapFromSpriteRomSet(PatternType.BminusY, PatternSubType.DeInterlaced, patternFrame);
+            }
+
             components.Standard = _romManager.Standard;
 
             return components;
@@ -134,6 +143,7 @@ namespace PhilipsPatternRom.Converter
                     linesPerField = _vectorEntries.Count / 4;
                     break;
                 case GeneratorStandard.NTSC:
+                case GeneratorStandard.SECAM:
                     linesPerField = _vectorEntries.Count / 2;
                     break;
                 case GeneratorStandard.PAL_M:
@@ -156,10 +166,12 @@ namespace PhilipsPatternRom.Converter
             _hsample = 0;
             _vline = 0;
 
-            if (_romManager.Standard == GeneratorStandard.PAL_16_9)
+            if (_romManager.Standard == GeneratorStandard.PAL_16_9 || _romManager.Standard == GeneratorStandard.SECAM)
             {
                 for (int i = 0; i < linesPerField; i++)
                 {
+                    //DrawLine_WideScreen(bitmap, type, _vectorEntries[i]);
+
                     var entry = _vectorEntries[i + linesPerField];
 
                     DrawLine_WideScreen(bitmap, type, entry);
@@ -283,6 +295,30 @@ namespace PhilipsPatternRom.Converter
 
             byte[] lsbSequence = null;
 
+
+#if false // SECAM hacks
+
+            //int centreAddr = Utility.DecodeVector(entry, Utility.SampleType.Centre, romsPerComponent);
+
+            var centreAddr = (entry.Item1 << 8);
+
+            if ((entry.Item2 & 0x20) == 0x20)
+                centreAddr |= 0x10000;
+
+            if ((entry.Item2 & 0x04) == 0x04)
+                centreAddr |= 0x20000;
+
+            if ((entry.Item2 & 0x08) == 0x08)
+                centreAddr |= 0x40000;
+
+            //int addr1 = (centreAddr * romsPerComponent) - (type == PatternType.Luma ? 1024 : 512);
+            int addr2 = (centreAddr * romsPerComponent) + 160;
+
+
+            render(bitmap, addr2, addr2 + (centreLength), false);
+            //render(bitmap, addr1, addr1 + backSpriteLength, false);
+
+#else
             var centreAddr = (entry.Item1 << 8);
 
             if ((entry.Item2 & 0x20) == 0x20)
@@ -299,6 +335,8 @@ namespace PhilipsPatternRom.Converter
 
             render(bitmap, addr1, addr1 + backSpriteLength, false);
             render(bitmap, addr2, addr2 + centreLength, false);
+#endif
+
 
             _vline++;
             _hsample = 0;

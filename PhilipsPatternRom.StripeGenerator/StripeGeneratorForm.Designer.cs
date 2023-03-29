@@ -80,7 +80,13 @@
             this.ddlGeneratorType.Items.AddRange(new object[] {
             "Please select",
             "PM5644G/00",
-            "PM5644G/Multi"});
+            "PM5644G/Multi",
+            "Pm5644g913",
+            "Pm5644g924",
+            "Pm5644m00",
+            "Pm5644m00MultiPattern",
+            "Pm5644p00",
+            "Pm5644l00"});
             this.ddlGeneratorType.Location = new System.Drawing.Point(11, 732);
             this.ddlGeneratorType.Name = "ddlGeneratorType";
             this.ddlGeneratorType.Size = new System.Drawing.Size(141, 21);

@@ -20,7 +20,7 @@ namespace PhilipsPatternRom.Converter
         {
             var entries = new List<Tuple<byte, byte, byte>>();
 
-            if (generatorStandard == GeneratorStandard.PAL_16_9)
+            if (generatorStandard == GeneratorStandard.PAL_16_9 || generatorStandard == GeneratorStandard.SECAM)
             {
                 // Vector table is a different format for 16:9 units. Only two bytes are used per line - Address high and Control
                 // Kludge it into the same structure used for 4:3

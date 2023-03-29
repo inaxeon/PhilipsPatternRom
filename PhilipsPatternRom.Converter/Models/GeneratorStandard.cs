@@ -11,6 +11,7 @@ namespace PhilipsPatternRom.Converter.Models
         PAL,
         PAL_M,
         PAL_16_9,
-        NTSC
+        NTSC,
+        SECAM
     }
 }
