@@ -15,6 +15,7 @@ namespace PhilipsPatternRom.Cli
     {
         // /Generator Pm5644g00 /OutputGenerator Pm5644g00MultiPattern /InROMs "N:\Electronics\TV\PM5644\PM5644G00" /InputPatternIndex 2 /OutputPatternIndex 0 /ClearExisting /AddDigApPattern "C:\Dev\PTV\PT5230\PT8633\TPD\BILLEDDATA\Data fra PTV_Brandskab\G\PHIL4X3\TXT_M_AP" /AddDigApPattern "C:\Dev\PTV\PT5230\PT8633\TPD\BILLEDDATA\Data fra PTV_Brandskab\G\PHIL16X9\TXT_M_AP" /FixDigCircle16x9Clock /FixDigCircle16x9Ap /OutROMs "N:\Electronics\TV\PM5644\PM5644G00_Modified"
         // /Generator Pm5644g00 /OutputGenerator Pm5644g00MultiPattern /InROMs "N:\Electronics\TV\PM5644\PM5644G00" /InputPatternIndex 2 /OutputPatternIndex 0 /AddDigApPattern "C:\Dev\PTV\PT5230\PT8633\TPD\BILLEDDATA\Data fra PTV_Brandskab\G\PHIL16X9\TXT_M_AP" /FixDigCircle16x9Clock /FixDigCircle16x9Ap /AddAlgApPattern "C:\Dev\PTV\PT5230\PT8631\TPD\BILLEDDATA\FUBK16X9\ANTIPAL" /FixAlgFubk16x9LowerIdBoxes /OutROMs "N:\Electronics\TV\PM5644\PM5644G00_Modified"
+        // /Generator Pm5644g00 /OutputGenerator Pm5644g00MultiPattern /InROMs "N:\Electronics\TV\PM5644\PM5644G00" /InputPatternIndex 2 /OutputPatternIndex 0 /AddDigApPattern "C:\Dev\PTV\PT5230\PT8633\TPD\BILLEDDATA\Data fra PTV_Brandskab\G\PHIL16X9\TXT_M_AP" /FixDigCircle16x9Clock /FixDigCircle16x9Ap /AddAlgApPattern "C:\Dev\PTV\PT5230\PT8631\TPD\BILLEDDATA\FUBK4X3\ANTIPAL" /FixAlgFubk4x3LowerIdBoxes /OutROMs "N:\Electronics\TV\PM5644\PM5644G00_Modified"
         // /Generator Pm5644m00 /InROMs "N:\Electronics\TV\PM5644\PM5644M00" /InputPatternIndex 2 /OutputPatternIndex 0 /AddPattern "C:\Dev\PTV\PT5230\PT8633\TPD\BILLEDDATA\Data fra PTV_Brandskab\M\PHIL16X9\M_TXT" /OutROMs "N:\Electronics\TV\PM5644\PM5644M00_Modified"
         // /Generator Pm5644g00 /InROMs "N:\Electronics\TV\PM5644\PM5644G00" /RenderPattern /InputPatternIndex 2 /InputPatternFrame 1
         // /Generator Pm5644g00MultiPattern /InROMs "N:\Electronics\TV\PM5644\PM5644G00_Modified" /RenderPattern /InputPatternIndex 0 /InputPatternFrame 0
@@ -79,6 +80,9 @@ namespace PhilipsPatternRom.Cli
                         break;
                     case "/FixAlgFubk16x9LowerIdBoxes":
                         patternsToAdd.Last().Fixes |= PatternFixType.FixAlgFubk16x9LowerIdBoxes;
+                        break;
+                    case "/FixAlgFubk4x3LowerIdBoxes":
+                        patternsToAdd.Last().Fixes |= PatternFixType.FixAlgFubk4x3LowerIdBoxes;
                         break;
                     case "/InputPatternIndex":
                         inputPatternIndex = int.Parse(args[++i]);
